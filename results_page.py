@@ -17,6 +17,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from theme_toggle import plot_layout
 
 from comment_fetchers import (
     fetch_instagram_comments_rich,
@@ -49,7 +50,6 @@ PLOT_LAYOUT = dict(
     margin=dict(l=0, r=0, t=40, b=0),
     font=dict(family="Inter, sans-serif"),
 )
-
 # ----------------------------------------------------------------------
 # STYLE
 # ----------------------------------------------------------------------
@@ -181,7 +181,7 @@ def _feed_html(rows: pd.DataFrame) -> str:
 # ----------------------------------------------------------------------
 # PAGE
 # ----------------------------------------------------------------------
-def render_results_page(platform_key: str, url: str, platform_info: dict):
+def render_results_page(PLOT_LAYOUT.update(plot_layout())):
     accent = platform_info["accent"] if platform_info else "#3ecf8e"
     platform_name = platform_info["name"] if platform_info else "Platform"
 
