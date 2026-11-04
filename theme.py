@@ -14,29 +14,42 @@ import os
 
 import streamlit as st
 
-ASSETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ASSETS_DIR = os.path.join(BASE_DIR, "assets")
+# Look in assets/ first, then in the main project folder (where the logos are on GitHub).
+SEARCH_DIRS = [ASSETS_DIR, BASE_DIR]
 VALID_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "svg", "avif"]
+
+MIME_TYPES = {
+    "png": "image/png",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "webp": "image/webp",
+    "svg": "image/svg+xml",
+    "avif": "image/avif",
+}
 
 
 # ----------------------------------------------------------------------
 # ASSET + HTML HELPERS
 # ----------------------------------------------------------------------
 def find_asset(base_name: str):
-    if not os.path.isdir(ASSETS_DIR):
-        return None
-    for ext in VALID_EXTENSIONS:
-        candidate = os.path.join(ASSETS_DIR, f"{base_name}.{ext}")
-        if os.path.exists(candidate):
-            return candidate
+    for folder in SEARCH_DIRS:
+        if not os.path.isdir(folder):
+            continue
+        for ext in VALID_EXTENSIONS:
+            candidate = os.path.join(folder, f"{base_name}.{ext}")
+            if os.path.exists(candidate):
+                return candidate
     return None
 
 
 def image_to_data_uri(path: str) -> str:
     ext = os.path.splitext(path)[1].lstrip(".").lower()
-    mime = "svg+xml" if ext == "svg" else ext
+    mime = MIME_TYPES.get(ext, "image/png")
     with open(path, "rb") as f:
         encoded = base64.b64encode(f.read()).decode()
-    return f"data:image/{mime};base64,{encoded}"
+    return f"data:{mime};base64,{encoded}"
 
 
 def md(html: str):
