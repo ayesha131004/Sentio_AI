@@ -10,6 +10,7 @@ from theme import (
     inject_theme, inject_card_accents, find_asset, image_to_data_uri,
     md, icon, donut_svg, keyed_container, columns,
 )
+from theme_toggle import render_theme_toggle
 from pages_instagram import render_instagram_input_page
 from pages_youtube import render_youtube_input_page
 from pages_linkedin import render_linkedin_input_page
@@ -21,6 +22,7 @@ from credits import (
     render_account_bar, show_upgrade_if_requested, request_upgrade,
     check_access, consume_credit, get_account, PRO_ONLY, FREE_CREDITS,
 )
+render_theme_toggle()
 
 PAGE_RENDERERS = {
     "youtube": render_youtube_input_page,
