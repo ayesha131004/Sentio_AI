@@ -4,6 +4,9 @@ pandas
 numpy
 transformers
 torch
+sentencepiece
+protobuf
+tiktoken
 requests
 matplotlib
 plotly
