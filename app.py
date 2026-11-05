@@ -22,7 +22,6 @@ from credits import (
     render_account_bar, show_upgrade_if_requested, request_upgrade,
     check_access, consume_credit, get_account, PRO_ONLY, FREE_CREDITS,
 )
-render_theme_toggle()
 
 PAGE_RENDERERS = {
     "youtube": render_youtube_input_page,
@@ -50,6 +49,7 @@ PLATFORMS = [
      "tag": "post / video", "accent": "#3b8cff"},
 ]
 
+# Must be the first Streamlit call in the script.
 st.set_page_config(
     page_title="Sentio AI - Audience Sentiment Intelligence",
     page_icon=find_asset("favicon") or "📡",
@@ -65,6 +65,10 @@ if "page" not in st.session_state:
 # Theme is injected on every run, before anything is drawn.
 inject_theme()
 inject_card_accents(PLATFORMS)
+
+# Light/dark toggle: AFTER inject_theme() so its overrides win, and BEFORE
+# the login gate so it also shows on the login page.
+render_theme_toggle()
 
 # ----------------------------------------------------------------------
 # LOGIN GATE + TOP NAV
