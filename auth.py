@@ -253,41 +253,54 @@ FEATURES = [
 # so dark and light mode both keep working.
 _AUTH_CSS = """
 <style>
-.block-container:has(.auth-side) { max-width: 1360px; padding-top: 1.6rem; padding-bottom: 4rem; }
+/* Sized to fit one screen: no forced min-height, tighter vertical rhythm, and a
+   compact step-down for short windows, so the page never needs to scroll. */
+.block-container:has(.auth-side) { max-width: 1320px; padding-top: 1rem; padding-bottom: 1rem; }
+.block-container:has(.auth-side) .st-key-theme_toggle_wrap { margin-top: .6rem; margin-bottom: 0; }
 
-/* two columns: more air between them, and tall enough to fill the screen */
-.block-container:has(.auth-side) div[data-testid="stHorizontalBlock"] {
-    gap: 5.5rem; align-items: center; min-height: calc(100vh - 17rem);
-}
+/* two columns: generous gap, vertically centred */
+.block-container:has(.auth-side) div[data-testid="stHorizontalBlock"] { gap: 5rem; align-items: center; }
 @media (max-width: 960px) {
-    .block-container:has(.auth-side) div[data-testid="stHorizontalBlock"] { gap: 2.5rem; min-height: 0; }
+    .block-container:has(.auth-side) div[data-testid="stHorizontalBlock"] { gap: 2rem; }
 }
 
 /* left: headline + feature list */
-.auth-side { padding: 1rem 0; }
-.auth-title { font-size: clamp(2.6rem, 5vw, 4.3rem); line-height: 1.05; margin: 0 0 1.6rem; }
-.auth-sub { font-size: 1.2rem; line-height: 1.75; max-width: 34rem; margin-bottom: 3rem; }
-.feat { gap: 1.4rem; padding: 1.5rem 0; max-width: 34rem; }
-.feat-ico { width: 3rem; height: 3rem; border-radius: 14px; }
-.feat-title { font-size: 1.08rem; }
-.feat-desc { font-size: .93rem; margin-top: .3rem; line-height: 1.6; }
+.auth-side { padding: .5rem 0; }
+.auth-title { font-size: clamp(2.4rem, 4.2vw, 3.6rem); line-height: 1.05; margin: 0 0 1.2rem; }
+.auth-sub { font-size: 1.1rem; line-height: 1.65; max-width: 34rem; margin-bottom: 1.8rem; }
+.feat { gap: 1.2rem; padding: 1.1rem 0; max-width: 34rem; }
+.feat-ico { width: 2.75rem; height: 2.75rem; border-radius: 13px; }
+.feat-title { font-size: 1.05rem; }
+.feat-desc { font-size: .9rem; margin-top: .2rem; line-height: 1.55; }
 
 /* right: heading, card, switch link */
-.auth-form-head { margin-bottom: 1.8rem; }
-.auth-form-title { font-size: 2.1rem; line-height: 1.15; }
-.auth-form-sub { font-size: 1.02rem; margin-top: .6rem; line-height: 1.6; }
-.block-container:has(.auth-side) div[data-testid="stForm"] { padding: 2.4rem 2.4rem 2.2rem; }
-.block-container:has(.auth-side) div[data-testid="stForm"] div[data-testid="stVerticalBlock"] { gap: 1.4rem; }
-.block-container:has(.auth-side) div[data-testid="stTextInput"] label p { font-size: .92rem; margin-bottom: .2rem; }
-.block-container:has(.auth-side) div[data-baseweb="input"] input { height: 3.5rem; font-size: 1rem !important; padding: 0 1.2rem !important; }
+.auth-form-head { margin-bottom: 1.2rem; }
+.auth-form-title { font-size: 1.9rem; line-height: 1.15; }
+.auth-form-sub { font-size: 1rem; margin-top: .4rem; line-height: 1.55; }
+.block-container:has(.auth-side) div[data-testid="stForm"] { padding: 1.8rem 2rem 1.6rem; }
+.block-container:has(.auth-side) div[data-testid="stForm"] div[data-testid="stVerticalBlock"] { gap: 1rem; }
+.block-container:has(.auth-side) div[data-testid="stTextInput"] label p { font-size: .9rem; margin-bottom: .1rem; }
+.block-container:has(.auth-side) div[data-baseweb="input"] input { height: 3.2rem; font-size: 1rem !important; padding: 0 1.1rem !important; }
 .block-container:has(.auth-side) div[data-testid="stFormSubmitButton"] > button {
-    width: 100%; min-height: 3.5rem; font-size: 1.05rem; margin-top: .6rem;
+    width: 100%; min-height: 3.2rem; font-size: 1.02rem; margin-top: .3rem;
 }
-.auth-switch { font-size: 1rem; margin: 2.2rem 0 .6rem; }
-.block-container:has(.auth-side) .stButton > button { min-height: 3rem; font-size: 1rem; padding: 0 1.4rem; }
+.auth-switch { font-size: .98rem; margin: 1.4rem 0 .4rem; }
+.block-container:has(.auth-side) .stButton > button { min-height: 2.8rem; font-size: .98rem; padding: 0 1.3rem; }
+
+/* short windows (laptops, small browser windows): tighten further */
+@media (max-height: 820px) {
+    .auth-title { font-size: clamp(2.1rem, 3.6vw, 3rem); margin-bottom: .9rem; }
+    .auth-sub { font-size: 1rem; margin-bottom: 1.2rem; }
+    .feat { padding: .8rem 0; }
+    .auth-form-title { font-size: 1.6rem; }
+    .block-container:has(.auth-side) div[data-testid="stForm"] { padding: 1.4rem 1.6rem 1.3rem; }
+    .block-container:has(.auth-side) div[data-baseweb="input"] input { height: 2.9rem; }
+    .block-container:has(.auth-side) div[data-testid="stFormSubmitButton"] > button { min-height: 2.9rem; }
+    .auth-switch { margin-top: 1rem; }
+}
 @media (max-width: 640px) {
-    .block-container:has(.auth-side) div[data-testid="stForm"] { padding: 1.6rem 1.3rem 1.5rem; }
-    .auth-title { font-size: 2.4rem; }
+    .block-container:has(.auth-side) div[data-testid="stForm"] { padding: 1.4rem 1.2rem 1.3rem; }
+    .auth-title { font-size: 2.2rem; }
 }
 </style>
 """
@@ -297,7 +310,7 @@ def render_auth_page():
     mode = st.session_state.get("auth_mode", "login")
 
     st.markdown(_AUTH_CSS, unsafe_allow_html=True)
-    md(f'<div style="padding-bottom:1.4rem;margin-bottom:2.4rem;border-bottom:1px solid var(--line);">{brand_lockup(56)}</div>')
+    md(f'<div style="padding-bottom:.9rem;margin-bottom:1.4rem;border-bottom:1px solid var(--line);">{brand_lockup(48)}</div>')
 
     side, form_col = columns([1.1, 1], gap="large")
 
