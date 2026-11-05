@@ -151,6 +151,51 @@ BAR_CSS = """
     display: inline-block;
 }
 
+/* ---------------- account bar: one tidy row, buttons grouped on the right ---------------- */
+.st-key-acct_bar { margin-bottom: 0.4rem; }
+.st-key-acct_bar div[data-testid="stHorizontalBlock"] {
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+}
+.st-key-acct_bar .user-bar {
+    display: flex !important;
+    align-items: center;
+    justify-content: flex-start !important;
+    flex-wrap: wrap;
+    row-gap: 0.3rem;
+    margin: 0 !important;
+    min-height: 2.2rem;
+    white-space: nowrap;
+}
+.st-key-acct_bar button {
+    height: 2.2rem;
+    min-height: 2.2rem;
+    padding: 0 0.9rem;
+    font-size: 0.85rem;
+    line-height: 1;
+    white-space: nowrap;
+    width: 100%;
+}
+.st-key-acct_bar div[data-testid="stElementContainer"] { margin: 0 !important; }
+
+/* "go pro" = the one accented button; "log out" = quiet ghost button on the far right */
+.st-key-bar_upgrade button {
+    background: linear-gradient(90deg, #4f8cff, #8b5cf6) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600;
+}
+.st-key-bar_upgrade button:hover { filter: brightness(1.1); }
+.st-key-logout_btn button {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    opacity: 0.75;
+}
+.st-key-logout_btn button:hover {
+    border-color: var(--line, rgba(255,255,255,0.2)) !important;
+    opacity: 1;
+}
+
 /* ---------------- Sentio AI Pro popup (narrow, vertical, formal) ---------------- */
 div[data-testid="stDialog"] div[role="dialog"] {
     max-height: 92vh;
@@ -293,21 +338,21 @@ def render_account_bar():
             + _credit_chip("Instagram", acct["instagram"])
         )
 
-    left, mid, right = st.columns([5, 1.3, 1])
-    with left:
-        st.markdown(
-            f'<div class="user-bar" style="justify-content:flex-start;">'
-            f'signed in as <b>{user}</b>{chips}</div>',
-            unsafe_allow_html=True,
-        )
-    with mid:
-        if acct["plan"] != "pro":
-            if st.button("✦ go pro", key="bar_upgrade"):
-                st.session_state.upgrade_reason = "manual"
-                st.rerun()
-    with right:
-        if st.button("log out", key="logout_btn"):
-            logout()
+    with st.container(key="acct_bar"):
+        left, mid, right = st.columns([7, 1.25, 1.25], vertical_alignment="center", gap="small")
+        with left:
+            st.markdown(
+                f'<div class="user-bar">signed in as <b>{user}</b>{chips}</div>',
+                unsafe_allow_html=True,
+            )
+        with mid:
+            if acct["plan"] != "pro":
+                if st.button("✦ go pro", key="bar_upgrade", use_container_width=True):
+                    st.session_state.upgrade_reason = "manual"
+                    st.rerun()
+        with right:
+            if st.button("log out", key="logout_btn", use_container_width=True):
+                logout()
 
 
 # ----------------------------------------------------------------------
