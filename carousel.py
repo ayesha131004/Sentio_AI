@@ -2,34 +2,39 @@
 """
 carousel.py
 ------------
-Responsive SentioAI source-card carousel.
+Responsive SentioAI horizontal platform carousel.
 
 Mobile:
-    One full card at a time, manual swipe, no automatic movement.
+    One full card visible, automatic horizontal movement,
+    manual swipe and drag supported.
 
 Tablet:
-    Two cards visible at a time.
+    Two cards visible, automatic horizontal movement.
 
-Laptop / Desktop:
-    Four cards visible at a time, automatic back-and-forth movement.
+Laptop/Desktop:
+    Four cards visible, automatic horizontal movement.
 
-The carousel pauses when the user interacts with it.
+All devices:
+    Moves left -> right -> left continuously.
+    Pauses during user interaction.
+    Resumes after the user becomes idle.
+    Never vertically stacks platform cards.
 """
 
 import json
-
 import streamlit as st
 
 try:
     import streamlit.components.v1 as components
-except Exception:  # pragma: no cover
+except Exception:
     components = None
 
 
 _CSS = """
 <style>
+
 /* =========================================================
-   MAIN CAROUSEL
+   CAROUSEL CONTAINER
    ========================================================= */
 
 .st-key-carousel {
@@ -51,12 +56,17 @@ _CSS = """
 
     cursor: grab;
     overscroll-behavior-x: contain;
+    overscroll-behavior-y: auto;
 
     scroll-snap-type: x proximity;
     scroll-padding-left: var(--pad);
 
     scrollbar-width: thin;
-    scrollbar-color: var(--line-strong, rgba(130,150,255,.32)) transparent;
+    scrollbar-color:
+        var(--line-strong, rgba(130,150,255,.32))
+        transparent;
+
+    -webkit-overflow-scrolling: touch;
 }
 
 .st-key-carousel:active {
@@ -64,27 +74,25 @@ _CSS = """
 }
 
 .st-key-carousel::-webkit-scrollbar {
-    height: 6px;
+    height: 5px;
 }
 
 .st-key-carousel::-webkit-scrollbar-button {
     display: none;
-    width: 0;
-    height: 0;
 }
 
 .st-key-carousel::-webkit-scrollbar-thumb {
     background: var(--line-strong, rgba(130,150,255,.32));
-    border-radius: 6px;
+    border-radius: 10px;
 }
 
 .st-key-carousel::-webkit-scrollbar-track {
     background: transparent;
-    margin: 0 var(--pad);
 }
 
 .st-key-carousel img {
     -webkit-user-drag: none;
+    user-select: none;
     max-width: 100%;
 }
 
@@ -101,6 +109,8 @@ _CSS = """
     max-width: none !important;
 
     flex-wrap: nowrap !important;
+    flex-direction: row !important;
+
     gap: var(--gap) !important;
     align-items: stretch !important;
 
@@ -109,11 +119,12 @@ _CSS = """
 
 
 /* =========================================================
-   RESPONSIVE CARD WIDTH
+   CARD WIDTH
    ========================================================= */
 
 .st-key-carousel div[data-testid="stColumn"],
 .st-key-carousel div[data-testid="column"] {
+
     --card-w: calc(
         (100cqw - (var(--pad) * 2) -
         (var(--gap) * (var(--cards) - 1))) / var(--cards)
@@ -131,7 +142,7 @@ _CSS = """
 
 
 /* =========================================================
-   PREVENT TEXT AND CONTENT OVERFLOW
+   CONTENT PROTECTION
    ========================================================= */
 
 .st-key-carousel [data-testid="stColumn"] *,
@@ -140,14 +151,9 @@ _CSS = """
 }
 
 .st-key-carousel [data-testid="stMarkdownContainer"],
-.st-key-carousel [data-testid="stMarkdownContainer"] p,
-.st-key-carousel [data-testid="stMarkdownContainer"] h1,
-.st-key-carousel [data-testid="stMarkdownContainer"] h2,
-.st-key-carousel [data-testid="stMarkdownContainer"] h3,
-.st-key-carousel [data-testid="stMarkdownContainer"] h4 {
+.st-key-carousel [data-testid="stMarkdownContainer"] p {
     max-width: 100%;
     overflow-wrap: anywhere;
-    word-break: normal;
 }
 
 .st-key-carousel button {
@@ -168,6 +174,7 @@ _CSS = """
    ========================================================= */
 
 @container (max-width: 1100px) {
+
     .st-key-carousel div[data-testid="stHorizontalBlock"] {
         --cards: 2;
     }
@@ -179,6 +186,7 @@ _CSS = """
    ========================================================= */
 
 @container (max-width: 680px) {
+
     .st-key-carousel {
         --gap: 12px;
         --pad: 4px;
@@ -195,11 +203,12 @@ _CSS = """
     .st-key-carousel div[data-testid="column"] {
         scroll-snap-align: start;
     }
+
 }
 
 
 /* =========================================================
-   HIDE THE INVISIBLE SCRIPT FRAME
+   HIDE INVISIBLE SCRIPT FRAME
    ========================================================= */
 
 div[data-testid="stElementContainer"]:has(iframe[height="0"]) {
@@ -217,10 +226,13 @@ div[data-testid="stElementContainer"]:has(iframe[height="0"]) {
    ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
+
     .st-key-carousel {
         scroll-behavior: auto !important;
     }
+
 }
+
 </style>
 """
 
@@ -228,6 +240,7 @@ div[data-testid="stElementContainer"]:has(iframe[height="0"]) {
 _JS = """
 <script>
 (function () {
+
     var P = window.parent;
     var doc;
 
@@ -238,6 +251,8 @@ _JS = """
     } catch (e) {
         return;
     }
+
+    /* Clean up the previous animation */
 
     if (P[KEY] && P[KEY].stop) {
         try {
@@ -252,43 +267,56 @@ _JS = """
         P.matchMedia("(prefers-reduced-motion: reduce)").matches
     );
 
-    var mobileQuery = P.matchMedia
-        ? P.matchMedia("(max-width: 680px)")
-        : null;
-
     var alive = true;
     var el = null;
     var listeners = [];
 
     var pos = 0;
     var dir = 1;
+
     var running = false;
     var finished = false;
 
     var startAt = Date.now() + CFG.delayMs;
     var pausedUntil = 0;
     var holdUntil = 0;
+
     var last = Date.now();
 
     var hovering = false;
     var focused = false;
-
     var dragging = false;
+
     var moved = false;
     var suppressClick = false;
 
     var startX = 0;
     var startScroll = 0;
 
+
+    /* =====================================================
+       EVENT MANAGEMENT
+       ===================================================== */
+
     function add(target, type, fn, opts) {
+
         target.addEventListener(type, fn, opts);
-        listeners.push([target, type, fn, opts]);
+
+        listeners.push([
+            target,
+            type,
+            fn,
+            opts
+        ]);
     }
 
+
     function stop() {
+
         alive = false;
 
         listeners.forEach(function (item) {
+
             try {
                 item[0].removeEventListener(
                     item[1],
@@ -296,22 +324,35 @@ _JS = """
                     item[3]
                 );
             } catch (e) {}
+
         });
 
         listeners = [];
     }
 
-    P[KEY] = { stop: stop };
 
-    function isMobile() {
-        return mobileQuery && mobileQuery.matches;
-    }
+    P[KEY] = {
+        stop: stop
+    };
+
+
+    /* =====================================================
+       PAUSE ON USER INTERACTION
+       ===================================================== */
 
     function touch() {
+
         pausedUntil = Date.now() + CFG.idleMs;
+
     }
 
+
+    /* =====================================================
+       BIND CAROUSEL
+       ===================================================== */
+
     function bind(node) {
+
         el = node;
 
         pos = el.scrollLeft;
@@ -321,48 +362,92 @@ _JS = """
             10
         ) || 1;
 
-        add(el, "wheel", touch, { passive: true });
-        add(el, "touchstart", touch, { passive: true });
-        add(el, "touchmove", touch, { passive: true });
+
+        /* Mouse wheel */
+
+        add(el, "wheel", touch, {
+            passive: true
+        });
+
+
+        /* Touch swipe */
+
+        add(el, "touchstart", touch, {
+            passive: true
+        });
+
+        add(el, "touchmove", touch, {
+            passive: true
+        });
+
+        add(el, "touchend", touch, {
+            passive: true
+        });
+
+
+        /* Keyboard */
+
         add(el, "keydown", touch);
 
+
+        /* Hover */
+
         add(el, "mouseenter", function () {
+
             hovering = true;
+
         });
 
         add(el, "mouseleave", function () {
+
             hovering = false;
             touch();
+
         });
 
+
+        /* Keyboard focus */
+
         add(el, "focusin", function () {
+
             focused = true;
+
         });
 
         add(el, "focusout", function (e) {
+
             if (
                 !e.relatedTarget ||
                 !el.contains(e.relatedTarget)
             ) {
+
                 focused = false;
                 touch();
+
             }
+
         });
 
+
+        /* Manual scrollbar / swipe movement */
+
         add(el, "scroll", function () {
-            if (
-                running &&
-                Math.abs(el.scrollLeft - Math.round(pos)) <= 3
-            ) {
-                return;
+
+            if (!running) {
+                touch();
             }
 
-            touch();
-        }, { passive: true });
+        }, {
+            passive: true
+        });
 
-        /* Mouse drag-to-scroll */
+
+        /* =================================================
+           MOUSE DRAG
+           ================================================= */
 
         add(el, "pointerdown", function (e) {
+
             touch();
 
             if (
@@ -377,9 +462,12 @@ _JS = """
 
             startX = e.clientX;
             startScroll = el.scrollLeft;
+
         });
 
+
         add(doc, "pointermove", function (e) {
+
             if (!dragging) return;
 
             var dx = e.clientX - startX;
@@ -389,6 +477,7 @@ _JS = """
             }
 
             moved = true;
+
             touch();
 
             el.style.cursor = "grabbing";
@@ -396,9 +485,12 @@ _JS = """
             el.style.scrollSnapType = "none";
 
             el.scrollLeft = startScroll - dx;
+
         });
 
+
         function endDrag() {
+
             if (!dragging) return;
 
             dragging = false;
@@ -410,30 +502,53 @@ _JS = """
             touch();
 
             if (moved) {
+
                 suppressClick = true;
 
                 P.setTimeout(function () {
+
                     suppressClick = false;
-                }, 100);
+
+                }, 120);
+
             }
+
         }
+
 
         add(doc, "pointerup", endDrag);
         add(doc, "pointercancel", endDrag);
 
+
+        /* Prevent accidental card selection after dragging */
+
         add(el, "click", function (e) {
+
             if (suppressClick) {
+
                 e.stopPropagation();
                 e.preventDefault();
+
             }
+
         }, true);
 
+
         add(el, "dragstart", function (e) {
+
             e.preventDefault();
+
         });
+
     }
 
+
+    /* =====================================================
+       AUTO-SCROLL STATE
+       ===================================================== */
+
     function setRunning(on) {
+
         if (on === running) return;
 
         running = on;
@@ -441,23 +556,41 @@ _JS = """
         if (!el) return;
 
         if (on) {
+
             pos = el.scrollLeft;
+
             el.style.scrollSnapType = "none";
+
         } else if (!dragging) {
+
             el.style.scrollSnapType = "";
+
         }
+
     }
 
+
+    /* =====================================================
+       MAIN ANIMATION LOOP
+       ===================================================== */
+
     function frame() {
+
         if (!alive) return;
+
+
+        /* Stop when Streamlit removes the iframe */
 
         if (
             window.frameElement &&
             !window.frameElement.isConnected
         ) {
+
             stop();
             return;
+
         }
+
 
         var now = Date.now();
 
@@ -468,31 +601,48 @@ _JS = """
 
         last = now;
 
-        /* Find the carousel when Streamlit finishes rendering */
+
+        /* Find the carousel after Streamlit renders */
 
         if (!el || !el.isConnected) {
-            var found = doc.querySelector(".st-key-carousel");
+
+            var found = doc.querySelector(
+                ".st-key-carousel"
+            );
 
             if (found) {
+
                 bind(found);
+
             } else {
+
                 el = null;
+
             }
+
         }
 
+
         if (el) {
+
             var max = Math.max(
                 0,
                 el.scrollWidth - el.clientWidth
             );
 
-            /* Keep the position valid after screen resizing */
 
-            pos = Math.max(0, Math.min(pos, max));
+            /* Keep position valid after resizing */
+
+            pos = Math.max(
+                0,
+                Math.min(pos, max)
+            );
+
+
+            /* Auto-scroll is enabled on ALL screen sizes */
 
             var canRun =
                 !reducedMotion &&
-                !isMobile() &&
                 !finished &&
                 max > 2 &&
                 !doc.hidden &&
@@ -502,18 +652,29 @@ _JS = """
                 now >= startAt &&
                 now >= pausedUntil;
 
+
             if (!canRun) {
+
                 setRunning(false);
+
             } else {
+
                 setRunning(true);
 
+
                 if (now >= holdUntil) {
-                    pos += (
-                        dir * (max / CFG.seconds) * dt
-                    );
+
+                    var speed = max / CFG.seconds;
+
+                    pos += dir * speed * dt;
+
+
+                    /* RIGHT END: reverse direction */
 
                     if (pos >= max) {
+
                         pos = max;
+
                         dir = -1;
 
                         holdUntil = now + CFG.endHoldMs;
@@ -521,21 +682,38 @@ _JS = """
                         if (!CFG.loop) {
                             finished = true;
                         }
-                    } else if (pos <= 0) {
+
+                    }
+
+
+                    /* LEFT END: reverse direction */
+
+                    else if (pos <= 0) {
+
                         pos = 0;
+
                         dir = 1;
 
                         holdUntil = now + CFG.endHoldMs;
+
                     }
 
+
                     el.dataset.sentioDir = String(dir);
+
                     el.scrollLeft = pos;
+
                 }
+
             }
+
         }
 
+
         P.requestAnimationFrame(frame);
+
     }
+
 
     P.requestAnimationFrame(frame);
 
@@ -555,18 +733,22 @@ def inject_carousel_css(
     **_ignored
 ):
     """
-    Responsive source-card carousel.
+    Responsive SentioAI carousel.
 
     Mobile:
-        One card at a time with manual swipe.
+        One card visible, automatic horizontal movement.
 
     Tablet:
         Two cards visible.
 
     Desktop:
-        Four cards visible with automatic movement.
+        Four cards visible.
 
-    User interaction pauses automatic movement.
+    All devices:
+        Automatic left-right movement.
+        Manual swipe and drag.
+        Pause on interaction.
+        Resume after inactivity.
     """
 
     st.markdown(
@@ -577,27 +759,44 @@ def inject_carousel_css(
     if components is None:
         return
 
+
     cfg = {
-        "seconds": max(1.0, float(seconds)),
+
+        "seconds": max(
+            1.0,
+            float(seconds)
+        ),
+
         "delayMs": int(
             max(0.0, float(start_delay)) * 1000
         ),
+
         "idleMs": int(
             max(0.0, float(idle_resume)) * 1000
         ),
+
         "endHoldMs": int(
             max(0.0, float(end_pause)) * 1000
         ),
+
         "loop": bool(loop),
+
     }
 
+
     try:
+
         components.html(
+
             _JS.replace(
                 "__CONFIG__",
                 json.dumps(cfg)
             ),
+
             height=0
+
         )
+
     except Exception:
+
         pass
