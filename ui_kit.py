@@ -78,36 +78,45 @@ _CSS = """
 .st-key-hx_page {
     --hx: #6d8bff;
     --hx2: #8b5cf6;
+    margin-top: 1.6rem;
 }
 .st-key-hx_page div[data-testid="stElementContainer"] { margin: 0; }
 
+/* ---- roomier page: wider cap on this screen only, more air between the two columns ---- */
+.block-container:has(.st-key-hx_page) { max-width: 1320px; padding-bottom: 5rem; }
+.st-key-hx_page div[data-testid="stHorizontalBlock"]:not(.st-key-hx_chips *) { gap: 4rem; }
+.st-key-hx_chips div[data-testid="stHorizontalBlock"] { gap: .8rem; }
+@media (max-width: 960px) {
+    .st-key-hx_page div[data-testid="stHorizontalBlock"]:not(.st-key-hx_chips *) { gap: 2.5rem; }
+}
+
 /* ---- progress steps ---- */
 .hx-steps {
-    display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+    display: flex; align-items: center; gap: .9rem; flex-wrap: wrap;
     font-family: var(--mono, ui-monospace, monospace);
-    font-size: .68rem; letter-spacing: .08em; text-transform: uppercase;
-    margin: .9rem 0 1.5rem;
+    font-size: .76rem; letter-spacing: .1em; text-transform: uppercase;
+    margin: 1.6rem 0 2.6rem;
 }
-.hx-step { display: flex; align-items: center; gap: .45rem; color: var(--text-dim, #8c97bd); opacity: .6; }
+.hx-step { display: flex; align-items: center; gap: .7rem; color: var(--text-dim, #8c97bd); opacity: .6; }
 .hx-step.done, .hx-step.now { opacity: 1; }
 .hx-step.now { color: var(--text, #eaf0ff); }
 .hx-dot {
-    width: 1.5rem; height: 1.5rem; border-radius: 50%;
+    width: 1.9rem; height: 1.9rem; border-radius: 50%;
     display: inline-flex; align-items: center; justify-content: center;
-    border: 1px solid var(--line-strong, rgba(130,150,255,.32)); font-size: .66rem;
+    border: 1px solid var(--line-strong, rgba(130,150,255,.32)); font-size: .74rem;
 }
 .hx-step.done .hx-dot { color: var(--positive, #2fe0a5); border-color: var(--positive, #2fe0a5); background: color-mix(in srgb, var(--positive, #2fe0a5) 14%, transparent); }
 .hx-step.now .hx-dot {
     color: var(--hx); border-color: var(--hx);
     box-shadow: 0 0 14px color-mix(in srgb, var(--hx) 55%, transparent);
 }
-.hx-bar { flex: 0 0 2.2rem; height: 1px; background: linear-gradient(90deg, var(--line-strong, rgba(130,150,255,.32)), transparent); }
+.hx-bar { flex: 0 0 3rem; height: 1px; background: linear-gradient(90deg, var(--line-strong, rgba(130,150,255,.32)), transparent); }
 
 /* ---- hero ---- */
-.hx-hero { display: flex; gap: 1.1rem; align-items: center; margin: .2rem 0 1rem; }
+.hx-hero { display: flex; gap: 1.6rem; align-items: center; margin: 0 0 1.5rem; }
 .hx-logo {
-    position: relative; flex: 0 0 68px; width: 68px; height: 68px;
-    border-radius: 20px; display: flex; align-items: center; justify-content: center;
+    position: relative; flex: 0 0 84px; width: 84px; height: 84px;
+    border-radius: 24px; display: flex; align-items: center; justify-content: center;
     background: var(--bg-glass, rgba(14,20,46,.62));
     font-size: 1.6rem; color: var(--hx);
 }
@@ -118,14 +127,14 @@ _CSS = """
     -webkit-mask-composite: xor; mask-composite: exclude;
     animation: hx-spin 7s linear infinite;
 }
-.hx-logo img { width: 38px; height: 38px; object-fit: contain; border-radius: 9px; }
+.hx-logo img { width: 46px; height: 46px; object-fit: contain; border-radius: 11px; }
 @keyframes hx-spin { to { transform: rotate(360deg); } }
 
 .hx-eyebrow {
     display: inline-flex; align-items: center; gap: .5rem;
     font-family: var(--mono, ui-monospace, monospace);
-    font-size: .68rem; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--hx); padding: .25rem .75rem; border-radius: 999px;
+    font-size: .74rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--hx); padding: .4rem 1rem; border-radius: 999px;
     border: 1px solid color-mix(in srgb, var(--hx) 42%, transparent);
     background: color-mix(in srgb, var(--hx) 10%, transparent);
 }
@@ -135,8 +144,8 @@ _CSS = """
     100% { box-shadow: 0 0 0 10px transparent; }
 }
 .hx-title {
-    font-size: clamp(1.9rem, 3.2vw, 2.7rem); font-weight: 700;
-    letter-spacing: -.03em; line-height: 1.1; margin: .55rem 0 0;
+    font-size: clamp(2.2rem, 4vw, 3.3rem); font-weight: 700;
+    letter-spacing: -.03em; line-height: 1.12; margin: .9rem 0 0;
     color: var(--heading, #fff);
 }
 .hx-title em {
@@ -144,7 +153,7 @@ _CSS = """
     background: linear-gradient(90deg, var(--hx), var(--hx2));
     -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.hx-sub { font-size: .95rem; color: var(--text-dim, #8c97bd); line-height: 1.65; max-width: 42rem; margin: 0 0 1.2rem; }
+.hx-sub { font-size: 1.05rem; color: var(--text-dim, #8c97bd); line-height: 1.7; max-width: 44rem; margin: 0 0 2.4rem; }
 
 /* ---- glass panel ---- */
 .st-key-hx_panel {
@@ -152,19 +161,20 @@ _CSS = """
     border: 1px solid var(--line-strong, rgba(130,150,255,.32)); border-radius: 20px;
     background: var(--bg-glass, rgba(14,20,46,.62));
     -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
-    padding: 1.3rem 1.4rem 1.2rem;
+    padding: 2.2rem 2.2rem 2rem;
     box-shadow: 0 28px 64px -36px color-mix(in srgb, var(--hx) 75%, transparent);
 }
+@media (max-width: 640px) { .st-key-hx_panel { padding: 1.4rem 1.2rem 1.3rem; } }
 .st-key-hx_panel::before {
     content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px;
     background: linear-gradient(90deg, transparent, var(--hx), transparent);
 }
 .hx-label {
     font-family: var(--mono, ui-monospace, monospace);
-    font-size: .68rem; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--text-dim, #8c97bd); margin: 0 0 .55rem;
+    font-size: .76rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--text-dim, #8c97bd); margin: 0 0 .9rem;
 }
-.hx-chips-label { margin: 1rem 0 .45rem; }
+.hx-chips-label { margin: 1.8rem 0 .9rem; }
 
 /* ---- link input (beats theme.py's global input rules by specificity) ---- */
 .st-key-hx_page .st-key-hx_input_wrap div[data-baseweb="input"] {
@@ -177,12 +187,12 @@ _CSS = """
                 0 0 28px color-mix(in srgb, var(--hx) 30%, transparent) !important;
 }
 .st-key-hx_page .st-key-hx_input_wrap div[data-baseweb="input"] input {
-    height: 3.3rem; padding: 0 1.1rem !important; font-size: .92rem !important;
+    height: 3.7rem; padding: 0 1.3rem !important; font-size: 1rem !important;
 }
 
 .hx-status {
-    display: flex; align-items: center; gap: .5rem; min-height: 1.3rem;
-    font-family: var(--mono, ui-monospace, monospace); font-size: .74rem; margin: .6rem 0 0;
+    display: flex; align-items: center; gap: .6rem; min-height: 1.6rem;
+    font-family: var(--mono, ui-monospace, monospace); font-size: .82rem; margin: .9rem 0 0;
 }
 .hx-status.ok   { color: var(--positive, #2fe0a5); }
 .hx-status.warn { color: var(--warn, #f5b94d); }
@@ -190,8 +200,8 @@ _CSS = """
 
 /* ---- quick-fill chips ---- */
 .st-key-hx_page .st-key-hx_chips .stButton > button {
-    width: 100%; height: 2.1rem; min-height: 2.1rem; padding: 0 .7rem;
-    font-family: var(--mono, ui-monospace, monospace); font-size: .72rem;
+    width: 100%; height: 2.7rem; min-height: 2.7rem; padding: 0 1rem;
+    font-family: var(--mono, ui-monospace, monospace); font-size: .82rem;
     white-space: nowrap; border-radius: 999px;
     background: color-mix(in srgb, var(--hx) 8%, transparent) !important;
     border: 1px dashed color-mix(in srgb, var(--hx) 55%, transparent) !important;
@@ -204,16 +214,16 @@ _CSS = """
 }
 
 /* ---- analyze button ---- */
-.st-key-hx_page .st-key-hx_submit_wrap { margin-top: 1.1rem; }
+.st-key-hx_page .st-key-hx_submit_wrap { margin-top: 2.2rem; }
 .st-key-hx_page .st-key-hx_submit_wrap .stButton > button {
     position: relative; overflow: hidden; width: 100%;
-    height: 3.3rem; min-height: 3.3rem; border: none !important; border-radius: 14px !important;
+    height: 3.8rem; min-height: 3.8rem; border: none !important; border-radius: 14px !important;
     background: linear-gradient(90deg, var(--hx), var(--hx2)) !important;
     box-shadow: 0 16px 36px -16px color-mix(in srgb, var(--hx) 85%, transparent) !important;
     transition: transform .15s, filter .15s;
 }
 .st-key-hx_page .st-key-hx_submit_wrap .stButton > button p {
-    color: #fff !important; font-weight: 700; letter-spacing: .02em; font-size: 1rem;
+    color: #fff !important; font-weight: 700; letter-spacing: .02em; font-size: 1.1rem;
 }
 .st-key-hx_page .st-key-hx_submit_wrap .stButton > button:hover { transform: translateY(-1px); filter: brightness(1.08); }
 .st-key-hx_page .st-key-hx_submit_wrap .stButton > button::after {
@@ -224,13 +234,13 @@ _CSS = """
 @keyframes hx-shine { 0% { left: -60%; } 55%, 100% { left: 130%; } }
 
 .hx-meta {
-    font-family: var(--mono, ui-monospace, monospace); font-size: .72rem;
-    color: var(--text-dim, #8c97bd); margin-top: .8rem; min-height: 1rem;
+    font-family: var(--mono, ui-monospace, monospace); font-size: .8rem;
+    color: var(--text-dim, #8c97bd); margin-top: 1.1rem; min-height: 1.2rem;
 }
 
 /* ---- loading ---- */
 .hx-load {
-    margin-top: 1rem; padding: .9rem 1rem; border-radius: 14px;
+    margin-top: 1.4rem; padding: 1.2rem 1.4rem; border-radius: 14px;
     border: 1px solid color-mix(in srgb, var(--hx) 40%, transparent);
     background: color-mix(in srgb, var(--hx) 8%, transparent);
 }
@@ -249,28 +259,29 @@ _CSS = """
 /* ---- side column ---- */
 .hx-side-title {
     font-family: var(--mono, ui-monospace, monospace);
-    font-size: .68rem; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--text-dim, #8c97bd); margin: .5rem 0 .75rem;
+    font-size: .76rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--text-dim, #8c97bd); margin: .4rem 0 1.1rem;
 }
+.hx-side-title.hx-gap-top { margin-top: 2.2rem; }
 .hx-card {
-    display: flex; gap: .85rem; align-items: flex-start;
-    padding: .95rem 1rem; margin-bottom: .75rem; border-radius: 16px;
+    display: flex; gap: 1.2rem; align-items: flex-start;
+    padding: 1.5rem 1.6rem; margin-bottom: 1.1rem; border-radius: 18px;
     border: 1px solid var(--line, rgba(130,150,255,.16)); background: var(--bg-glass, rgba(14,20,46,.62));
     transition: transform .2s, border-color .2s;
 }
 .hx-card:hover { transform: translateX(3px); border-color: var(--hx); }
 .hx-ico {
-    flex: 0 0 2.5rem; width: 2.5rem; height: 2.5rem; border-radius: 12px;
+    flex: 0 0 3rem; width: 3rem; height: 3rem; border-radius: 14px;
     display: flex; align-items: center; justify-content: center; color: var(--hx);
     background: color-mix(in srgb, var(--hx) 14%, transparent);
     border: 1px solid color-mix(in srgb, var(--hx) 32%, transparent);
 }
-.hx-card-title { font-weight: 600; font-size: .92rem; line-height: 1.3; color: var(--text, #eaf0ff); }
-.hx-card-desc { font-size: .8rem; color: var(--text-dim, #8c97bd); line-height: 1.5; margin-top: 2px; }
-.hx-models { display: flex; flex-wrap: wrap; gap: .45rem; }
+.hx-card-title { font-weight: 600; font-size: 1.02rem; line-height: 1.3; color: var(--text, #eaf0ff); }
+.hx-card-desc { font-size: .9rem; color: var(--text-dim, #8c97bd); line-height: 1.6; margin-top: .35rem; }
+.hx-models { display: flex; flex-wrap: wrap; gap: .7rem; }
 .hx-model {
-    font-family: var(--mono, ui-monospace, monospace); font-size: .66rem;
-    padding: .22rem .65rem; border-radius: 999px; color: var(--text-dim, #8c97bd);
+    font-family: var(--mono, ui-monospace, monospace); font-size: .74rem;
+    padding: .4rem .9rem; border-radius: 999px; color: var(--text-dim, #8c97bd);
     border: 1px solid var(--line-strong, rgba(130,150,255,.32));
 }
 </style>
@@ -436,7 +447,7 @@ def render_input_page(
                     f"""
                     <div class="hx-side-title">What you'll get</div>
                     {cards}
-                    <div class="hx-side-title">Powered by</div>
+                    <div class="hx-side-title hx-gap-top">Powered by</div>
                     <div class="hx-models">
                         <span class="hx-model">XLM-RoBERTa sentiment</span>
                         <span class="hx-model">DistilRoBERTa emotion</span>
