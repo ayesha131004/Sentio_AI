@@ -11,7 +11,7 @@ from theme import (
     md, icon, donut_svg, keyed_container, columns,
 )
 from theme_toggle import render_theme_toggle
-from marquee import render_platform_marquee
+from carousel import inject_carousel_css
 from pages_instagram import render_instagram_input_page
 from pages_youtube import render_youtube_input_page
 from pages_linkedin import render_linkedin_input_page
@@ -153,7 +153,7 @@ with hero_right:
     )
 
 # ----------------------------------------------------------------------
-# SOURCE CARDS
+# SOURCE CARDS (auto-sliding carousel)
 # ----------------------------------------------------------------------
 acct = get_account(current_user())
 is_pro_user = acct["plan"] == "pro"
@@ -171,48 +171,58 @@ md(
     """
 )
 
-# Auto-scrolling platform strip (left -> right). Decorative; the cards below stay clickable.
-# Options: seconds=30 (bigger = slower), direction="left" to reverse.
-render_platform_marquee(PLATFORMS)
+# Speed: seconds=45 is one full pass (bigger = slower). direction="left" reverses it.
+inject_carousel_css(PLATFORMS, seconds=45, direction="right")
 
-cols = st.columns(5, gap="medium")
-for col, p in zip(cols, PLATFORMS):
-    with col:
-        with keyed_container(f"card_{p['key']}"):
-            icon_file = find_asset(p["icon_base"])
-            icon_html = (
-                f'<img src="{image_to_data_uri(icon_file)}" alt="{p["name"]} logo">'
-                if icon_file else f'<span>{p["icon"]}</span>'
-            )
 
-            if is_pro_user:
-                status = f'<span class="chip pro">{icon("star", 12)} Pro</span>'
-                cta = f"Select {p['name']}"
-            elif p["key"] in PRO_ONLY:
-                status = f'<span class="chip locked">{icon("lock", 12)} Pro only</span>'
-                cta = "Unlock with Pro"
-            else:
-                left = acct.get(p["key"], 0)
-                cls = "empty" if left == 0 else ("low" if left == 1 else "ok")
-                status = f'<span class="chip {cls}">{left} of {FREE_CREDITS} free</span>'
-                cta = f"Select {p['name']}" if left > 0 else "Upgrade to continue"
+def render_source_card(p: dict, suffix: str = ""):
+    """One platform card. `suffix` keeps widget keys unique for the duplicate set."""
+    with keyed_container(f"card_{p['key']}{suffix}"):
+        icon_file = find_asset(p["icon_base"])
+        icon_html = (
+            f'<img src="{image_to_data_uri(icon_file)}" alt="{p["name"]} logo">'
+            if icon_file else f'<span>{p["icon"]}</span>'
+        )
 
-            md(
-                f"""
-                <div class="pc-top"><div class="pc-icon">{icon_html}</div>{status}</div>
-                <div class="pc-name">{p['name']}</div>
-                <div class="pc-desc">{p['desc']}</div>
-                <div class="pc-tag">{p['tag']}</div>
-                """
-            )
-            if st.button(cta, key=f"select_{p['key']}"):
-                ok, reason = check_access(current_user(), p["key"])
-                if not ok:
-                    request_upgrade(reason, p["key"])
-                    st.rerun()
-                st.session_state.platform = p["key"]
-                st.session_state.page = "input"
+        if is_pro_user:
+            status = f'<span class="chip pro">{icon("star", 12)} Pro</span>'
+            cta = f"Select {p['name']}"
+        elif p["key"] in PRO_ONLY:
+            status = f'<span class="chip locked">{icon("lock", 12)} Pro only</span>'
+            cta = "Unlock with Pro"
+        else:
+            left = acct.get(p["key"], 0)
+            cls = "empty" if left == 0 else ("low" if left == 1 else "ok")
+            status = f'<span class="chip {cls}">{left} of {FREE_CREDITS} free</span>'
+            cta = f"Select {p['name']}" if left > 0 else "Upgrade to continue"
+
+        md(
+            f"""
+            <div class="pc-top"><div class="pc-icon">{icon_html}</div>{status}</div>
+            <div class="pc-name">{p['name']}</div>
+            <div class="pc-desc">{p['desc']}</div>
+            <div class="pc-tag">{p['tag']}</div>
+            """
+        )
+        if st.button(cta, key=f"select_{p['key']}{suffix}"):
+            ok, reason = check_access(current_user(), p["key"])
+            if not ok:
+                request_upgrade(reason, p["key"])
                 st.rerun()
+            st.session_state.platform = p["key"]
+            st.session_state.page = "input"
+            st.rerun()
+
+
+# The cards are drawn twice (second set uses "_dup" keys) so the loop never shows a gap.
+with keyed_container("carousel"):
+    cols = st.columns(len(PLATFORMS) * 2, gap="medium")
+    for i, col in enumerate(cols):
+        with col:
+            if i < len(PLATFORMS):
+                render_source_card(PLATFORMS[i])
+            else:
+                render_source_card(PLATFORMS[i - len(PLATFORMS)], suffix="_dup")
 
 # ----------------------------------------------------------------------
 # FOOTER
