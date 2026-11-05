@@ -144,9 +144,14 @@ BAR_CSS = """
     padding: 0.15rem 0.55rem;
     display: inline-block;
 }
-.pro-hero { text-align: center; margin-bottom: 0.4rem; }
-.pro-hero-title { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; }
-.pro-hero-sub { font-size: 0.9rem; opacity: 0.7; margin-top: 0.3rem; line-height: 1.5; }
+
+/* ---- Pro popup ---- */
+div[data-testid="stDialog"] div[role="dialog"] {
+    max-height: 92vh;
+    overflow-y: auto;
+}
+.pro-hero { text-align: center; margin: 0 0 0.4rem; }
+.pro-hero-sub { font-size: 0.9rem; opacity: 0.7; line-height: 1.5; }
 .pro-reason {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.78rem;
@@ -159,24 +164,42 @@ BAR_CSS = """
 }
 .benefit-row {
     display: flex;
-    gap: 0.8rem;
-    align-items: flex-start;
-    padding: 0.6rem 0;
+    gap: 0.9rem;
+    align-items: center;
+    padding: 0.55rem 0;
     border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 .benefit-row:last-child { border-bottom: none; }
-.benefit-icon { font-size: 1.2rem; width: 1.8rem; text-align: center; flex-shrink: 0; }
-.benefit-title { font-weight: 600; font-size: 0.92rem; }
-.benefit-desc { font-size: 0.8rem; opacity: 0.65; margin-top: 1px; }
-.price-box { text-align: center; margin: 1rem 0 0.4rem; }
-.price-big { font-size: 2.2rem; font-weight: 700; }
-.price-per { font-size: 0.9rem; opacity: 0.6; margin-left: 0.2rem; }
+.benefit-icon {
+    width: 2.2rem;
+    height: 2.2rem;
+    flex: 0 0 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    line-height: 1;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.benefit-title { font-weight: 600; font-size: 0.92rem; line-height: 1.3; }
+.benefit-desc { font-size: 0.8rem; opacity: 0.65; margin-top: 2px; line-height: 1.35; }
+.price-box {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 0.3rem;
+    margin: 0.8rem 0 0.6rem;
+}
+.price-big { font-size: 2.2rem; font-weight: 700; line-height: 1; }
+.price-per { font-size: 0.9rem; opacity: 0.6; }
 .demo-note {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.68rem;
-    opacity: 0.55;
+    opacity: 0.75;
     text-align: center;
-    margin-top: 0.5rem;
+    margin-top: 0.9rem;
 }
 </style>
 """
@@ -237,10 +260,11 @@ def _reason_text(reason: str | None, platform: str | None) -> str | None:
 def _upgrade_body():
     reason = st.session_state.get("upgrade_reason_text")
 
+    # The dialog header already shows the "Sentio AI Pro" title,
+    # so the body only carries the tagline (no duplicate heading).
     st.markdown(
         """
         <div class="pro-hero">
-            <div class="pro-hero-title">✦ Sentio AI Pro</div>
             <div class="pro-hero-sub">Understand your audience on every platform, without limits.</div>
         </div>
         """,
@@ -279,7 +303,7 @@ _HAS_DIALOG = hasattr(st, "dialog")
 
 if _HAS_DIALOG:
 
-    @st.dialog("Sentio AI Pro", width="large")
+    @st.dialog("✦ Sentio AI Pro", width="large")
     def _upgrade_dialog():
         _upgrade_body()
 
