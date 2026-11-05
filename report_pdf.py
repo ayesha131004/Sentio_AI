@@ -212,33 +212,64 @@ def build_pdf_report(df, platform_name="Platform", url="", emotions=None, keywor
     page_w = A4[0] - 36 * mm
     story = []
 
-    # ---- header ----
-    story.append(Paragraph(
-        f'<font name="{bold}" size="22" color="#0b1220">Sentio</font>'
-        f'<font name="{bold}" size="22" color="#4f46e5">AI</font>', S["body"]))
-    story.append(Paragraph(
-        f'<font name="{bold}" size="14" color="#0b1220">Audience sentiment report</font>',
-        ParagraphStyle("t", fontName=bold, fontSize=14, leading=22)))
-    story.append(Spacer(1, 4))
-    scope = (f"All {total_all} comments analysed" if total == total_all
-             else f"Showing {total} of {total_all} comments (filters applied)")
-    generated = datetime.now(timezone.utc).strftime("%d %b %Y, %H:%M UTC")
-    story.append(Paragraph(
-        f'<font color="#0b1220">Platform:</font> {_para(platform_name, uni)}<br/>'
-        f'<font color="#0b1220">Link:</font> {_para(url, uni, 160)}<br/>'
-        f'<font color="#0b1220">Generated:</font> {generated}<br/>'
-        f'<font color="#0b1220">Scope:</font> {scope}', S["meta"]))
+       # ---- HEADER ----
 
-    if used_demo:
-        story.append(Spacer(1, 8))
-        warn = Table([[Paragraph(
-            "Demo data: live comments could not be fetched for this link, so the figures "
-            "below come from sample comments, not from your audience.", S["cell"])]],
-            colWidths=[page_w])
-        warn.setStyle(TableStyle([
-            ("BOX", (0, 0), (-1, -1), 0.8, AMBER), ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fff7e6")),
-            ("LEFTPADDING", (0, 0), (-1, -1), 8), ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6)]))
-        story.append(warn)
+    # Main brand name
+    brand_style = ParagraphStyle(
+        "brand",
+        fontName=bold,
+        fontSize=24,
+        leading=30,
+        textColor=DARK,
+        spaceAfter=3,
+    )
+
+    story.append(
+        Paragraph(
+            f'<font color="#0b1220">Sentio</font>'
+            f'<font color="#4f46e5">AI</font>',
+            brand_style
+        )
+    )
+
+    # Report subtitle
+    title_style = ParagraphStyle(
+        "report_title",
+        fontName=bold,
+        fontSize=14,
+        leading=19,
+        textColor=DARK,
+        spaceAfter=8,
+    )
+
+    story.append(
+        Paragraph(
+            "Audience sentiment report",
+            title_style
+        )
+    )
+
+    story.append(Spacer(1, 4))
+
+    scope = (
+        f"All {total_all} comments analysed"
+        if total == total_all
+        else f"Showing {total} of {total_all} comments (filters applied)"
+    )
+
+    generated = datetime.now(timezone.utc).strftime(
+        "%d %b %Y, %H:%M UTC"
+    )
+
+    story.append(
+        Paragraph(
+            f'<font color="#0b1220">Platform:</font> {_para(platform_name, uni)}<br/>'
+            f'<font color="#0b1220">Link:</font> {_para(url, uni, 160)}<br/>'
+            f'<font color="#0b1220">Generated:</font> {generated}<br/>'
+            f'<font color="#0b1220">Scope:</font> {scope}',
+            S["meta"]
+        )
+    )
 
     # ---- verdict banner ----
     story.append(Spacer(1, 10))
