@@ -1,21 +1,20 @@
 """
 carousel.py
 ------------
-Makes the real source cards slide automatically (endless loop), and lets the
-visitor take over by scrolling by hand.
+Source cards slide once from the first card (YouTube) to the last (Facebook),
+then stop. Any manual scroll, swipe, drag or key press cancels the
+auto-scroll, and it does not restart.
 
-app.py renders the cards twice inside a container keyed "carousel" and calls
+app.py renders the cards once inside a container keyed "carousel" and calls
 
-    inject_carousel_css(PLATFORMS, seconds=45, direction="right")
+    inject_carousel_css(PLATFORMS, seconds=9)
 
-Behaviour:
-  * moves on its own (direction="right" = cards drift left -> right)
-  * a manual scroll or drag stops it; after `resume_after` seconds it moves
-    again in the direction the visitor scrolled
-  * pause_on_hover=True also freezes it while the mouse is over the row
-  * with "reduce motion" turned on it never moves by itself
+Options:
+  seconds      how long the slide from first to last card takes
+  card_width   width of each card in px (wider = more distance to travel)
+  start_delay  seconds to wait after the page loads before sliding
 
-Note: card_width should stay >= 230 so one set of cards is wider than the screen.
+With "reduce motion" turned on there is no auto-scroll, only manual scrolling.
 """
 
 import json
@@ -29,9 +28,7 @@ except Exception:  # pragma: no cover
 
 _CSS = """
 <style>
-__ACCENTS__
-
-/* the row is now a real scroll container; JS moves it automatically */
+/* the row is a normal horizontal scroll container; JS slides it once */
 .st-key-carousel {
     overflow-x: auto; overflow-y: hidden;
     padding: 10px 4px 28px;
@@ -49,7 +46,6 @@ __ACCENTS__
     width: max-content !important;
     flex-wrap: nowrap !important;
     gap: 1rem !important;
-    padding-right: 1rem;               /* = gap, so the loop point is seamless */
 }
 .st-key-carousel div[data-testid="stColumn"],
 .st-key-carousel div[data-testid="column"] {
@@ -63,12 +59,6 @@ __ACCENTS__
 div[data-testid="stElementContainer"]:has(iframe[height="0"]) {
     position: absolute; width: 0; height: 0; overflow: hidden; margin: 0 !important;
 }
-
-/* reduce motion: show a single normal row that the visitor scrolls by hand */
-@media (prefers-reduced-motion: reduce) {
-    .st-key-carousel div[data-testid="stColumn"]:nth-child(n+__HIDE_FROM__),
-    .st-key-carousel div[data-testid="column"]:nth-child(n+__HIDE_FROM__) { display: none !important; }
-}
 </style>
 """
 
@@ -81,11 +71,9 @@ _JS = """
 
   var CFG = __CONFIG__;
   var reduced = !!(P.matchMedia && P.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  var alive = true, el = null, track = null, half = 0;
-  var pos = 0, lastRead = 0, dir = CFG.dir;
-  var resumeAt = 0, dragging = false, moved = false, hovering = false, touching = false;
-  var suppressClick = false, startX = 0, lastX = 0, startScroll = 0;
-  var last = Date.now(), tickCount = 0, listeners = [];
+  var alive = true, el = null, listeners = [];
+  var playing = false, startAt = 0, expected = 0;
+  var dragging = false, moved = false, suppressClick = false, startX = 0, startScroll = 0;
 
   function add(t, type, fn, opts) { t.addEventListener(type, fn, opts); listeners.push([t, type, fn, opts]); }
   function stop() {
@@ -95,40 +83,25 @@ _JS = """
   }
   P[KEY] = { stop: stop };
 
-  function measure() { half = track ? track.offsetWidth / 2 : 0; }
-  // Two identical sets: position p looks exactly like p + half, so wrap inside [8, half + 8].
-  function norm(v) {
-    if (half <= 0) return v;
-    while (v < 8) v += half;
-    while (v > half + 8) v -= half;
-    return v;
-  }
-  function setScroll(v) { el.scrollLeft = v; lastRead = el.scrollLeft; }
-  function resumeLater() { resumeAt = Date.now() + CFG.resumeMs; }
+  function cancel() { playing = false; }
+  function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
 
   function bind(n) {
     el = n;
-    track = el.querySelector('div[data-testid="stHorizontalBlock"]');
-    half = 0;
 
-    // Manual scroll (touch swipe, trackpad, Shift+wheel, scrollbar, keyboard)
+    // Any manual interaction cancels the auto-scroll for good.
+    add(el, "wheel", cancel, { passive: true });
+    add(el, "touchstart", cancel, { passive: true });
+    add(el, "keydown", cancel);
     add(el, "scroll", function () {
-      if (dragging || !half) return;
-      var cur = el.scrollLeft;
-      if (Math.abs(cur - lastRead) > 0.5) {
-        dir = cur > lastRead ? 1 : -1;          // keep going the way the visitor pushed
-        var n2 = norm(cur);
-        if (n2 !== cur) el.scrollLeft = n2;
-        pos = n2; lastRead = el.scrollLeft;
-        resumeLater();
-      }
+      if (playing && Math.abs(el.scrollLeft - expected) > 3) cancel();
     }, { passive: true });
 
-    // Mouse drag
+    // Mouse drag-to-scroll
     add(el, "pointerdown", function (e) {
+      cancel();
       if (e.pointerType !== "mouse" || e.button !== 0) return;
-      dragging = true; moved = false;
-      startX = lastX = e.clientX; startScroll = el.scrollLeft;
+      dragging = true; moved = false; startX = e.clientX; startScroll = el.scrollLeft;
     });
     add(doc, "pointermove", function (e) {
       if (!dragging) return;
@@ -136,20 +109,13 @@ _JS = """
       if (!moved && Math.abs(dx) < 5) return;
       moved = true;
       el.style.cursor = "grabbing"; el.style.userSelect = "none";
-      var step = e.clientX - lastX;
-      if (step) dir = step > 0 ? -1 : 1;        // dragging right = cards move right
-      lastX = e.clientX;
-      var v = startScroll - dx, n3 = norm(v);
-      if (n3 !== v) startScroll += n3 - v;
-      setScroll(n3); pos = lastRead;
+      el.scrollLeft = startScroll - dx;
     });
     function endDrag() {
       if (!dragging) return;
       dragging = false;
       el.style.cursor = ""; el.style.userSelect = "";
       if (moved) { suppressClick = true; setTimeout(function () { suppressClick = false; }, 60); }
-      pos = el.scrollLeft; lastRead = pos;
-      resumeLater();
     }
     add(doc, "pointerup", endDrag);
     add(doc, "pointercancel", endDrag);
@@ -159,38 +125,35 @@ _JS = """
     }, true);
     add(el, "dragstart", function (e) { e.preventDefault(); });
 
-    // Touch: hold still while a finger is down
-    add(el, "touchstart", function () { touching = true; }, { passive: true });
-    add(el, "touchend", function () { touching = false; resumeLater(); }, { passive: true });
-    add(el, "touchcancel", function () { touching = false; resumeLater(); }, { passive: true });
-
-    add(el, "mouseenter", function () { hovering = true; });
-    add(el, "mouseleave", function () { hovering = false; });
+    // Play once per page load (the flag lives on the element itself).
+    if (!reduced && el.dataset.sentioAuto !== "1") {
+      el.dataset.sentioAuto = "1";
+      el.scrollLeft = 0; expected = 0;
+      playing = true;
+      startAt = Date.now() + CFG.delayMs;
+    }
   }
 
   function frame() {
     if (!alive) return;
     if (window.frameElement && !window.frameElement.isConnected) { stop(); return; }
 
-    var now = Date.now();
-    var dt = Math.min(0.05, (now - last) / 1000);
-    last = now;
-
     if (!el || !el.isConnected) {
       var found = doc.querySelector(".st-key-carousel");
       if (found) bind(found); else el = null;
     }
-    if (el) {
-      if (!half || (++tickCount % 45 === 0)) {
-        var before = half;
-        measure();
-        if (half && !before) { pos = half * 0.5; setScroll(pos); }
-      }
-      var paused = reduced || dragging || touching || doc.hidden ||
-                   (CFG.hover && hovering) || now < resumeAt;
-      if (half && !paused) {
-        pos = norm(pos + dir * (half / CFG.seconds) * dt);
-        setScroll(pos);
+    if (el && playing && !doc.hidden) {
+      var now = Date.now();
+      if (now >= startAt) {
+        var max = el.scrollWidth - el.clientWidth;
+        if (max <= 0) {
+          playing = false;                       // everything already fits
+        } else {
+          var t = Math.min(1, (now - startAt) / (CFG.seconds * 1000));
+          el.scrollLeft = ease(t) * max;         // YouTube -> Facebook
+          expected = el.scrollLeft;
+          if (t >= 1) playing = false;           // reached the end: stop
+        }
       }
     }
     P.requestAnimationFrame(frame);
@@ -201,36 +164,18 @@ _JS = """
 """
 
 
-def inject_carousel_css(platforms: list, seconds: int = 45, direction: str = "right",
-                        card_width: int = 250, pause_on_hover: bool = False,
-                        resume_after: float = 1.5):
-    """
-    seconds         time for one full pass of the cards (bigger = slower)
-    direction       "right": cards drift left -> right, "left": right -> left
-    card_width      width of each card in px (keep >= 230)
-    pause_on_hover  also freeze the row while the mouse is over it
-    resume_after    seconds of calm after a manual scroll before it moves again
-    """
-    # The duplicate set of cards uses keys like "card_youtube_dup",
-    # so give them the same per-platform accent colours as the first set.
-    accents = "".join(
-        f'.st-key-card_{p["key"]}_dup {{ --accent: {p["accent"]}; }}' for p in platforms
-    )
-    css = (
-        _CSS.replace("__ACCENTS__", accents)
-        .replace("__WIDTH__", str(int(card_width)))
-        .replace("__HIDE_FROM__", str(len(platforms) + 1))
-    )
+def inject_carousel_css(platforms: list = None, seconds: float = 9, card_width: int = 300,
+                        start_delay: float = 1.0, **_ignored):
+    """Styles the card row as a scroller and slides it once, first card -> last card.
+    Extra keyword arguments from older versions (direction, pause_on_hover, ...) are ignored."""
+    css = _CSS.replace("__WIDTH__", str(int(card_width)))
     st.markdown(css, unsafe_allow_html=True)
 
     if components is None:
-        return  # manual scrolling still works; only the auto-movement is skipped
+        return  # manual scrolling still works; only the auto-slide is skipped
     cfg = {
-        "seconds": max(5, int(seconds)),
-        # dir -1 = scrollLeft decreases = cards move to the right
-        "dir": -1 if direction == "right" else 1,
-        "resumeMs": int(resume_after * 1000),
-        "hover": bool(pause_on_hover),
+        "seconds": max(1.0, float(seconds)),
+        "delayMs": int(max(0.0, float(start_delay)) * 1000),
     }
     try:
         components.html(_JS.replace("__CONFIG__", json.dumps(cfg)), height=0)
