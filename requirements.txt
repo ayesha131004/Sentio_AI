@@ -13,3 +13,4 @@ plotly
 scikit-learn
 nltk
 google-api-python-client
+reportlab
