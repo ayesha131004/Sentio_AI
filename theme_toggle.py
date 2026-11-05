@@ -36,6 +36,27 @@ def plot_layout() -> dict:
     return base
 
 
+_TOGGLE_CSS = """
+<style>
+/* push the toggle clear of Streamlit's fixed top bar and keep it on one line, right-aligned */
+.st-key-theme_toggle_wrap {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 1.6rem;
+    margin-bottom: 0.2rem;
+}
+.st-key-theme_toggle_wrap label,
+.st-key-theme_toggle_wrap label p {
+    white-space: nowrap;
+    margin: 0;
+    line-height: 1.2;
+}
+.st-key-theme_toggle_wrap div[data-testid="stToggle"] { width: auto; }
+</style>
+"""
+
+
 def render_theme_toggle():
     """Shows a toggle at the top right. Changing it reruns the app, and
     inject_theme() (called earlier in app.py) picks up the new value."""
@@ -44,11 +65,14 @@ def render_theme_toggle():
     def _on_change():
         st.session_state.theme = "light" if st.session_state["_theme_light"] else "dark"
 
-    _, right = st.columns([6, 1.4])
+    st.markdown(_TOGGLE_CSS, unsafe_allow_html=True)
+
+    _, right = st.columns([6, 1.6])
     with right:
-        st.toggle(
-            "☀️ Light mode",
-            value=current_theme() == "light",
-            key="_theme_light",
-            on_change=_on_change,
-        )
+        with st.container(key="theme_toggle_wrap"):
+            st.toggle(
+                "☀️ Light mode",
+                value=current_theme() == "light",
+                key="_theme_light",
+                on_change=_on_change,
+            )
