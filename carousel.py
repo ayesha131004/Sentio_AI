@@ -11,7 +11,9 @@ app.py renders the cards once inside a container keyed "carousel" and calls
 
 Options:
   seconds      how long the slide from first to last card takes
-  card_width   width of each card in px (wider = more distance to travel)
+  card_width   kept for backwards compatibility (card size is now responsive:
+               4 cards fit the row on wide screens, 3 on medium, 2 on small,
+               so the last visible card is never cut in half)
   start_delay  seconds to wait after the page loads before sliding
 
 With "reduce motion" turned on there is no auto-scroll, only manual scrolling.
@@ -30,30 +32,49 @@ _CSS = """
 <style>
 /* the row is a normal horizontal scroll container; JS slides it once */
 .st-key-carousel {
+    --gap: 1rem;
+    --pad: 6px;
+    --cards: 4;                         /* cards visible at once */
+    container-type: inline-size;        /* lets the cards size themselves to the row */
     overflow-x: auto; overflow-y: hidden;
-    padding: 10px 4px 28px;
+    padding: 10px var(--pad) 22px;
     cursor: grab;
     overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-left: var(--pad);
     scrollbar-width: thin;
     scrollbar-color: var(--line-strong, rgba(130,150,255,.32)) transparent;
 }
 .st-key-carousel::-webkit-scrollbar { height: 6px; }
+.st-key-carousel::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 .st-key-carousel::-webkit-scrollbar-thumb { background: var(--line-strong, rgba(130,150,255,.32)); border-radius: 6px; }
-.st-key-carousel::-webkit-scrollbar-track { background: transparent; }
+.st-key-carousel::-webkit-scrollbar-track { background: transparent; margin: 0 var(--pad); }
 .st-key-carousel img { -webkit-user-drag: none; }
 
 .st-key-carousel div[data-testid="stHorizontalBlock"] {
     width: max-content !important;
     flex-wrap: nowrap !important;
-    gap: 1rem !important;
+    gap: var(--gap) !important;
+    align-items: stretch !important;
 }
+
+/* each card = (row width - side padding - gaps) / cards-per-view */
 .st-key-carousel div[data-testid="stColumn"],
 .st-key-carousel div[data-testid="column"] {
-    flex: 0 0 __WIDTH__px !important;
-    width: __WIDTH__px !important;
-    min-width: __WIDTH__px !important;
-    max-width: __WIDTH__px !important;
+    --card-w: calc((100cqw - (var(--pad) * 2) - (var(--gap) * (var(--cards) - 1))) / var(--cards));
+    flex: 0 0 var(--card-w) !important;
+    width: var(--card-w) !important;
+    min-width: var(--card-w) !important;
+    max-width: var(--card-w) !important;
+    scroll-snap-align: start;
 }
+
+/* fewer, larger cards on narrower rows so none is ever sliced in half */
+@container (max-width: 980px) { .st-key-carousel div[data-testid="stHorizontalBlock"] { --cards: 3; } }
+@container (max-width: 680px) { .st-key-carousel div[data-testid="stHorizontalBlock"] { --cards: 2; } }
+
+/* the card-count variable lives on the block, so pass it down to the columns */
+.st-key-carousel div[data-testid="stHorizontalBlock"] > div { --cards: inherit; }
 
 /* keep the invisible script frame from adding a gap */
 div[data-testid="stElementContainer"]:has(iframe[height="0"]) {
@@ -109,12 +130,13 @@ _JS = """
       if (!moved && Math.abs(dx) < 5) return;
       moved = true;
       el.style.cursor = "grabbing"; el.style.userSelect = "none";
+      el.style.scrollSnapType = "none";
       el.scrollLeft = startScroll - dx;
     });
     function endDrag() {
       if (!dragging) return;
       dragging = false;
-      el.style.cursor = ""; el.style.userSelect = "";
+      el.style.cursor = ""; el.style.userSelect = ""; el.style.scrollSnapType = "";
       if (moved) { suppressClick = true; setTimeout(function () { suppressClick = false; }, 60); }
     }
     add(doc, "pointerup", endDrag);
@@ -131,6 +153,7 @@ _JS = """
       el.scrollLeft = 0; expected = 0;
       playing = true;
       startAt = Date.now() + CFG.delayMs;
+      el.style.scrollSnapType = "none";          // snapping would fight the animation
     }
   }
 
@@ -148,13 +171,16 @@ _JS = """
         var max = el.scrollWidth - el.clientWidth;
         if (max <= 0) {
           playing = false;                       // everything already fits
+          el.style.scrollSnapType = "";
         } else {
           var t = Math.min(1, (now - startAt) / (CFG.seconds * 1000));
-          el.scrollLeft = ease(t) * max;         // YouTube -> Facebook
+          el.scrollLeft = ease(t) * max;         // first card -> last card
           expected = el.scrollLeft;
-          if (t >= 1) playing = false;           // reached the end: stop
+          if (t >= 1) { playing = false; el.style.scrollSnapType = ""; }   // reached the end: stop
         }
       }
+    } else if (el && !playing && el.style.scrollSnapType === "none" && !dragging) {
+      el.style.scrollSnapType = "";              // auto-scroll was cancelled: give snapping back
     }
     P.requestAnimationFrame(frame);
   }
@@ -168,8 +194,7 @@ def inject_carousel_css(platforms: list = None, seconds: float = 9, card_width: 
                         start_delay: float = 1.0, **_ignored):
     """Styles the card row as a scroller and slides it once, first card -> last card.
     Extra keyword arguments from older versions (direction, pause_on_hover, ...) are ignored."""
-    css = _CSS.replace("__WIDTH__", str(int(card_width)))
-    st.markdown(css, unsafe_allow_html=True)
+    st.markdown(_CSS, unsafe_allow_html=True)
 
     if components is None:
         return  # manual scrolling still works; only the auto-slide is skipped
