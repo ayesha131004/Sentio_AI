@@ -1,7 +1,7 @@
 """
 results_page.py
 -----------------
-Shared results page used by all four platforms. Fetches comments, runs
+Shared results page used by all platforms. Fetches comments, runs
 sentiment + emotion analysis, and shows an interactive dashboard:
   - filters (sentiment, confidence, keyword, sort) that drive every chart
   - KPI row, sentiment donut, emotion bars, timeline, keywords
@@ -45,10 +45,9 @@ EMOTION_COLORS = {
 }
 
 # ----------------------------------------------------------------------
-# STYLE
+# STYLE (injected inside render_results_page so it applies on every rerun)
 # ----------------------------------------------------------------------
-st.markdown(
-    """<style>
+_CSS = """<style>
 .comment-row{display:flex;align-items:flex-start;gap:.8rem;padding:.65rem 0;border-bottom:1px solid var(--line, rgba(255,255,255,.08));}
 .comment-row:last-child{border-bottom:none;}
 .comment-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:600;color:#fff;}
@@ -56,9 +55,7 @@ st.markdown(
 .comment-meta{font-size:.7rem;color:var(--text-dim, #8b8ba0);margin-top:3px;font-family:'JetBrains Mono',monospace;}
 .comment-badge{display:inline-block;padding:0 .45rem;border-radius:999px;font-size:.65rem;margin-left:.4rem;color:#0b0b14;font-weight:600;}
 .comment-heart{color:var(--text-dim, #8b8ba0);font-size:.85rem;margin-left:auto;padding-top:2px;white-space:nowrap;}
-</style>""",
-    unsafe_allow_html=True,
-)
+</style>"""
 
 
 def _style(fig, **layout):
@@ -87,7 +84,7 @@ def _fetch(platform_key: str, url: str) -> list[dict]:
         return fetch_linkedin_comments_rich(url)
     if platform_key == "x":
         return fetch_x_comments_rich(url)
-    raise ValueError(f"Unknown platform: {platform_key}")
+    raise ValueError(f"Comment fetching isn't available for {platform_key} yet.")
 
 
 def _load(platform_key: str, url: str) -> dict:
@@ -118,7 +115,7 @@ def _load(platform_key: str, url: str) -> dict:
             except Exception:
                 pass
 
-        # Overall emotion percentages
+        # Overall emotion percentages (fallback when per-comment labels are missing)
         try:
             overall_emotions = analyze_emotions(texts) or {}
         except Exception:
@@ -194,6 +191,8 @@ def _back_button():
 # PAGE
 # ----------------------------------------------------------------------
 def render_results_page(platform_key: str, url: str, platform_info: dict):
+    st.markdown(_CSS, unsafe_allow_html=True)
+
     accent = platform_info["accent"] if platform_info else "#3ecf8e"
     platform_name = platform_info["name"] if platform_info else "Platform"
 
