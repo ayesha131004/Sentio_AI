@@ -11,7 +11,7 @@ Rules
 
 Credits and plan live in the same users.db as the login (see auth.py).
 
-NOTE: the "Activate Pro" button is a DEMO checkout - it flips the account to
+NOTE: the "Activate" buttons are a DEMO checkout - they flip the account to
 Pro without taking any payment. To charge real money, replace
 `activate_pro()` with a call made after a successful Razorpay / Stripe payment.
 """
@@ -24,7 +24,13 @@ from auth import _connect, current_user, logout, AUTH_CSS
 # CONFIG - edit these freely
 # ----------------------------------------------------------------------
 FREE_CREDITS = 3
-PRO_PRICE_LABEL = "₹499"       # shown on the popup
+
+MONTHLY_PRICE = 499            # rupees per month
+ANNUAL_PRICE = 4990            # rupees per year
+ANNUAL_SAVING = MONTHLY_PRICE * 12 - ANNUAL_PRICE
+
+# kept for backwards compatibility with older imports
+PRO_PRICE_LABEL = f"₹{MONTHLY_PRICE:,}"
 PRO_PRICE_PERIOD = "/ month"
 
 CREDIT_COLUMN = {"youtube": "yt_credits", "instagram": "ig_credits"}
@@ -38,11 +44,11 @@ PLATFORM_NAMES = {
 }
 
 PRO_BENEFITS = [
-    ("∞", "Unlimited analyses", "No credit limits on YouTube or Instagram."),
-    ("🔓", "Every platform unlocked", "LinkedIn, X and Facebook, on top of YouTube and Instagram."),
-    ("⚡", "Priority processing", "Your analyses go to the front of the queue."),
-    ("📊", "Deeper insights", "Full per-comment sentiment and emotion breakdowns."),
-    ("💬", "Priority support", "Get help faster when something looks off."),
+    ("Unlimited analyses", "No credit limits on YouTube or Instagram."),
+    ("Every platform unlocked", "LinkedIn, X and Facebook, in addition to YouTube and Instagram."),
+    ("Priority processing", "Your analyses are placed at the front of the queue."),
+    ("Deeper insights", "Full per-comment sentiment and emotion breakdowns."),
+    ("Priority support", "Faster assistance whenever something looks off."),
 ]
 
 
@@ -145,61 +151,123 @@ BAR_CSS = """
     display: inline-block;
 }
 
-/* ---- Pro popup ---- */
+/* ---------------- Sentio AI Pro popup (narrow, vertical, formal) ---------------- */
 div[data-testid="stDialog"] div[role="dialog"] {
     max-height: 92vh;
     overflow-y: auto;
 }
-.pro-hero { text-align: center; margin: 0 0 0.4rem; }
-.pro-hero-sub { font-size: 0.9rem; opacity: 0.7; line-height: 1.5; }
+
+.pro-lead {
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 0.1rem 0 0.25rem;
+}
+.pro-sub {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    line-height: 1.5;
+    margin-bottom: 0.9rem;
+}
 .pro-reason {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     color: var(--neutral);
     border: 1px solid rgba(232,178,77,0.4);
     background: rgba(232,178,77,0.08);
     border-radius: 8px;
     padding: 0.6rem 0.9rem;
-    margin: 0.8rem 0;
+    margin: 0 0 0.9rem;
+    line-height: 1.5;
+}
+
+/* what is included */
+.pro-section-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.55;
+    margin: 0.2rem 0 0.35rem;
 }
 .benefit-row {
     display: flex;
-    gap: 0.9rem;
-    align-items: center;
-    padding: 0.55rem 0;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
 }
 .benefit-row:last-child { border-bottom: none; }
-.benefit-icon {
-    width: 2.2rem;
-    height: 2.2rem;
-    flex: 0 0 2.2rem;
+.benefit-check {
+    flex: 0 0 1.35rem;
+    width: 1.35rem;
+    height: 1.35rem;
+    margin-top: 1px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
-    line-height: 1;
-    border-radius: 8px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #8fb4ff;
+    background: rgba(99,140,255,0.15);
+    border: 1px solid rgba(99,140,255,0.4);
 }
-.benefit-title { font-weight: 600; font-size: 0.92rem; line-height: 1.3; }
-.benefit-desc { font-size: 0.8rem; opacity: 0.65; margin-top: 2px; line-height: 1.35; }
-.price-box {
+.benefit-title { font-weight: 600; font-size: 0.9rem; line-height: 1.3; }
+.benefit-desc { font-size: 0.78rem; opacity: 0.65; margin-top: 2px; line-height: 1.4; }
+
+/* the two subscription cards */
+.st-key-plan_monthly,
+.st-key-plan_annual {
+    border-radius: 14px !important;
+    padding: 0.35rem 0.4rem 0.2rem !important;
+    margin-top: 0.5rem;
+}
+.st-key-plan_monthly { border: 1px solid rgba(255,255,255,0.14) !important; }
+.st-key-plan_annual {
+    border: 2px solid transparent !important;
+    background:
+        linear-gradient(var(--bg-card, #0d1117), var(--bg-card, #0d1117)) padding-box,
+        linear-gradient(135deg, #4f8cff, #8b5cf6) border-box !important;
+}
+.plan-head {
     display: flex;
-    justify-content: center;
-    align-items: baseline;
-    gap: 0.3rem;
-    margin: 0.8rem 0 0.6rem;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.6rem;
 }
-.price-big { font-size: 2.2rem; font-weight: 700; line-height: 1; }
-.price-per { font-size: 0.9rem; opacity: 0.6; }
-.demo-note {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.68rem;
-    opacity: 0.75;
+.plan-name { font-size: 1rem; font-weight: 600; }
+.plan-badge {
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 0.18rem 0.65rem;
+    border-radius: 999px;
+    color: #d9c8ff;
+    background: rgba(139,92,246,0.22);
+    white-space: nowrap;
+}
+.plan-price {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    margin: 0.55rem 0 0.15rem;
+}
+.plan-amt { font-size: 2rem; font-weight: 700; line-height: 1; }
+.plan-per { font-size: 0.88rem; opacity: 0.65; }
+.plan-note { font-size: 0.8rem; opacity: 0.7; line-height: 1.45; margin-bottom: 0.4rem; }
+
+.pro-terms {
+    font-size: 0.72rem;
+    opacity: 0.6;
+    line-height: 1.5;
     text-align: center;
     margin-top: 0.9rem;
+}
+.demo-note {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.66rem;
+    opacity: 0.7;
+    text-align: center;
+    margin-top: 0.4rem;
 }
 </style>
 """
@@ -257,43 +325,74 @@ def _reason_text(reason: str | None, platform: str | None) -> str | None:
     return None
 
 
+def _finish_activation(cycle: str):
+    activate_pro(current_user())
+    st.session_state["pro_cycle"] = cycle
+    st.session_state.pop("upgrade_reason_text", None)
+    st.session_state.pop("upgrade_open", None)
+    st.rerun()
+
+
 def _upgrade_body():
     reason = st.session_state.get("upgrade_reason_text")
 
-    # The dialog header already shows the "Sentio AI Pro" title,
-    # so the body only carries the tagline (no duplicate heading).
     st.markdown(
-        """
-        <div class="pro-hero">
-            <div class="pro-hero-sub">Understand your audience on every platform, without limits.</div>
-        </div>
-        """,
+        '<div class="pro-lead">Choose your Sentio AI Pro plan</div>'
+        '<div class="pro-sub">Understand your audience on every platform, without limits. '
+        'Both plans include the full set of features below.</div>',
         unsafe_allow_html=True,
     )
     if reason:
         st.markdown(f'<div class="pro-reason">{reason}</div>', unsafe_allow_html=True)
 
+    # --- what is included ---
     rows = "".join(
-        f'<div class="benefit-row"><div class="benefit-icon">{icon}</div>'
+        f'<div class="benefit-row"><div class="benefit-check">✓</div>'
         f'<div><div class="benefit-title">{title}</div>'
         f'<div class="benefit-desc">{desc}</div></div></div>'
-        for icon, title, desc in PRO_BENEFITS
+        for title, desc in PRO_BENEFITS
     )
-    st.markdown(rows, unsafe_allow_html=True)
-
     st.markdown(
-        f'<div class="price-box"><span class="price-big">{PRO_PRICE_LABEL}</span>'
-        f'<span class="price-per">{PRO_PRICE_PERIOD}</span></div>',
+        f'<div class="pro-section-label">What is included</div>{rows}',
         unsafe_allow_html=True,
     )
 
-    if st.button("Activate Sentio AI Pro", key="activate_pro_btn", type="primary", use_container_width=True):
-        activate_pro(current_user())
-        st.session_state.pop("upgrade_reason_text", None)
-        st.session_state.pop("upgrade_open", None)
-        st.rerun()
+    # --- plan 1: monthly ---
+    with st.container(border=True, key="plan_monthly"):
+        st.markdown(
+            f"""
+            <div class="plan-head"><span class="plan-name">Monthly</span></div>
+            <div class="plan-price">
+                <span class="plan-amt">₹{MONTHLY_PRICE:,}</span><span class="plan-per">/ month</span>
+            </div>
+            <div class="plan-note">Billed every month. Cancel at any time.</div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("Choose monthly", key="activate_monthly_btn", use_container_width=True):
+            _finish_activation("monthly")
+
+    # --- plan 2: annual (recommended) ---
+    with st.container(border=True, key="plan_annual"):
+        st.markdown(
+            f"""
+            <div class="plan-head">
+                <span class="plan-name">Annual</span>
+                <span class="plan-badge">Save ₹{ANNUAL_SAVING:,}</span>
+            </div>
+            <div class="plan-price">
+                <span class="plan-amt">₹{ANNUAL_PRICE:,}</span><span class="plan-per">/ year</span>
+            </div>
+            <div class="plan-note">Works out to about ₹{round(ANNUAL_PRICE / 12):,} per month,
+            billed once a year. Cancel at any time.</div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("Choose annual", key="activate_annual_btn", type="primary", use_container_width=True):
+            _finish_activation("annual")
 
     st.markdown(
+        '<div class="pro-terms">Subscriptions renew automatically until cancelled.</div>'
         '<div class="demo-note">Demo checkout: no real payment is taken.</div>',
         unsafe_allow_html=True,
     )
@@ -303,7 +402,8 @@ _HAS_DIALOG = hasattr(st, "dialog")
 
 if _HAS_DIALOG:
 
-    @st.dialog("✦ Sentio AI Pro", width="large")
+    # default width ("small") keeps the popup narrow and tall, like a plan sheet
+    @st.dialog("Sentio AI Pro")
     def _upgrade_dialog():
         _upgrade_body()
 
