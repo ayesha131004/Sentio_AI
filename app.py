@@ -153,7 +153,7 @@ with hero_right:
     )
 
 # ----------------------------------------------------------------------
-# SOURCE CARDS (auto-sliding carousel)
+# SOURCE CARDS (slide once from YouTube to Facebook, then stop)
 # ----------------------------------------------------------------------
 acct = get_account(current_user())
 is_pro_user = acct["plan"] == "pro"
@@ -171,13 +171,14 @@ md(
     """
 )
 
-# Speed: seconds=45 is one full pass (bigger = slower). direction="left" reverses it.
-inject_carousel_css(PLATFORMS, seconds=45, direction="right")
+# seconds = how long the slide from YouTube to Facebook takes (bigger = slower).
+# card_width = px per card. start_delay = seconds to wait after the page loads.
+inject_carousel_css(PLATFORMS, seconds=9, card_width=300, start_delay=1.0)
 
 
-def render_source_card(p: dict, suffix: str = ""):
-    """One platform card. `suffix` keeps widget keys unique for the duplicate set."""
-    with keyed_container(f"card_{p['key']}{suffix}"):
+def render_source_card(p: dict):
+    """One platform card."""
+    with keyed_container(f"card_{p['key']}"):
         icon_file = find_asset(p["icon_base"])
         icon_html = (
             f'<img src="{image_to_data_uri(icon_file)}" alt="{p["name"]} logo">'
@@ -204,7 +205,7 @@ def render_source_card(p: dict, suffix: str = ""):
             <div class="pc-tag">{p['tag']}</div>
             """
         )
-        if st.button(cta, key=f"select_{p['key']}{suffix}"):
+        if st.button(cta, key=f"select_{p['key']}"):
             ok, reason = check_access(current_user(), p["key"])
             if not ok:
                 request_upgrade(reason, p["key"])
@@ -214,15 +215,11 @@ def render_source_card(p: dict, suffix: str = ""):
             st.rerun()
 
 
-# The cards are drawn twice (second set uses "_dup" keys) so the loop never shows a gap.
 with keyed_container("carousel"):
-    cols = st.columns(len(PLATFORMS) * 2, gap="medium")
-    for i, col in enumerate(cols):
+    cols = st.columns(len(PLATFORMS), gap="medium")
+    for col, p in zip(cols, PLATFORMS):
         with col:
-            if i < len(PLATFORMS):
-                render_source_card(PLATFORMS[i])
-            else:
-                render_source_card(PLATFORMS[i - len(PLATFORMS)], suffix="_dup")
+            render_source_card(p)
 
 # ----------------------------------------------------------------------
 # FOOTER
