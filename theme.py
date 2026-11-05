@@ -1,8 +1,11 @@
 """
 theme.py
 ---------
-Single source of truth for Sentio AI's look. Call `inject_theme()` once at the
-top of EVERY run in app.py (before anything else is drawn).
+Single source of truth for Sentio AI's look (dark + high-tech light).
+
+Call `inject_theme()` once at the top of EVERY run in app.py. It reads
+st.session_state["theme"] ("dark" or "light", set by theme_toggle.py) and adds
+the light overrides on top of the dark base when needed.
 
 Why one file: CSS that lives at the top of a page module only gets injected the
 first time that module is imported. After that, Streamlit reruns skip it and the
@@ -113,7 +116,7 @@ def icon(name: str, size: int = 18) -> str:
 # ----------------------------------------------------------------------
 def brand_lockup(size: int = 44, show_word: bool = True) -> str:
     """The S mark cropped out of sentioai.png (its dark backdrop is blended into
-    the page colour) with a text wordmark, so the logo stays sharp at nav size."""
+    a fixed dark tile) with a text wordmark, so the logo stays sharp at nav size."""
     logo = find_asset("sentioai")
     if logo:
         uri = image_to_data_uri(logo)
@@ -130,7 +133,7 @@ def brand_lockup(size: int = 44, show_word: bool = True) -> str:
 
 
 # ----------------------------------------------------------------------
-# THEME CSS
+# THEME CSS (dark base)
 # ----------------------------------------------------------------------
 THEME_CSS = """
 <style>
@@ -146,6 +149,8 @@ THEME_CSS = """
     --text: #eaf0ff;
     --text-dim: #8c97bd;
     --text-faint: #5d678a;
+    --track: rgba(255, 255, 255, 0.07);
+    --logo-bg: #050816;
 
     /* sentiment */
     --negative: #ff5d7e;
@@ -198,11 +203,14 @@ div[data-testid="stElementContainer"]:has(style) { display: none; }
 
 .ico { flex-shrink: 0; vertical-align: middle; }
 
+/* theme switch label */
+div[data-testid="stToggle"] p { font-size: 0.8rem; color: var(--text-dim); }
+
 /* ---------- brand ---------- */
 .brand { display: inline-flex; align-items: center; gap: 0.65rem; }
 .brand-mark {
     display: inline-block; flex-shrink: 0;
-    background-color: var(--bg); background-blend-mode: lighten; background-repeat: no-repeat;
+    background-color: var(--logo-bg); background-blend-mode: lighten; background-repeat: no-repeat;
     border-radius: 12px;
 }
 .brand-mark.fallback {
@@ -354,7 +362,7 @@ div[data-testid="stAlert"] { border-radius: var(--radius-md); }
 .preview-rows { flex: 1; display: grid; gap: 0.85rem; }
 .prow-top { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.35rem; color: var(--text); }
 .prow-top span:last-child { font-family: var(--mono) !important; color: var(--text-dim); }
-.track { height: 6px; border-radius: 4px; background: rgba(255,255,255,0.07); overflow: hidden; }
+.track { height: 6px; border-radius: 4px; background: var(--track); overflow: hidden; }
 .fill { height: 100%; border-radius: 4px; }
 .preview-foot { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--line); display: flex; justify-content: space-between; font-size: 0.74rem; color: var(--text-dim); }
 .preview-foot b { color: var(--positive); font-weight: 600; }
@@ -448,7 +456,20 @@ div[data-testid="stAlert"] { border-radius: var(--radius-md); }
 .mini-spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line-strong); border-top-color: var(--accent, var(--cyan)); animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ---------- results ---------- */
+/* ---------- results header (used by results_page.py) ---------- */
+.input-eyebrow {
+    font-family: var(--mono) !important; font-size: 0.74rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--accent, var(--cyan)); margin-bottom: 0.3rem;
+}
+.input-title { font-size: clamp(1.8rem, 3.2vw, 2.4rem); font-weight: 700; letter-spacing: -0.03em; color: #fff; margin: 0.2rem 0 0.7rem; }
+.input-sub {
+    display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-family: var(--mono) !important; font-size: 0.78rem; color: var(--text-dim);
+    border: 1px solid var(--line); border-radius: 999px; padding: 0.3rem 0.8rem;
+    background: rgba(255,255,255,0.03); margin-bottom: 1.2rem;
+}
+
+/* ---------- results (static layout classes) ---------- */
 .res-head-url {
     display: inline-flex; align-items: center; gap: 0.5rem; max-width: 100%;
     font-family: var(--mono) !important; font-size: 0.78rem; color: var(--text-dim);
@@ -531,8 +552,183 @@ div[data-testid="stDialog"] div[role="dialog"] {
 """
 
 
+# ----------------------------------------------------------------------
+# LIGHT THEME (high-tech): variable swap + targeted overrides.
+# Added AFTER THEME_CSS, only when st.session_state["theme"] == "light".
+# ----------------------------------------------------------------------
+LIGHT_CSS = """
+<style>
+:root, .stApp {
+    color-scheme: light;
+    --bg: #f3f6fc;
+    --bg-elevated: #ffffff;
+    --bg-glass: rgba(255, 255, 255, 0.82);
+    --line: rgba(79, 70, 229, 0.16);
+    --line-strong: rgba(79, 70, 229, 0.30);
+    --text: #0b1220;
+    --text-dim: #51607a;
+    --text-faint: #8a96ad;
+    --track: rgba(79, 70, 229, 0.12);
+    --heading: #0b1220;
+    --cyan: #0891b2;
+    --negative: #e0365c;
+    --neutral: #5b6cf0;
+    --positive: #0f9f73;
+    --warn: #b7791f;
+}
+
+/* ---------- backdrop: blueprint grid + cyan/violet glows ---------- */
+.stApp { background: var(--bg) !important; }
+.stApp::before {
+    background:
+        radial-gradient(ellipse 800px 480px at 82% -6%, rgba(124, 58, 237, 0.18), transparent 62%),
+        radial-gradient(ellipse 760px 460px at 8% 2%, rgba(6, 182, 212, 0.20), transparent 60%),
+        linear-gradient(rgba(79,70,229,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(79,70,229,0.08) 1px, transparent 1px);
+    background-size: auto, auto, 56px 56px, 56px 56px;
+}
+/* animated scan line across the top */
+.stApp::after {
+    content: ""; position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 999; pointer-events: none;
+    background: linear-gradient(90deg, transparent, #06b6d4, #4f46e5, #7c3aed, transparent);
+    background-size: 200% 100%;
+    animation: sentio-scan 6s linear infinite;
+}
+@keyframes sentio-scan { to { background-position: -200% 0; } }
+
+/* ---------- headings (were hardcoded white) ---------- */
+.brand-word, .section-title, .pc-name, .auth-form-title, .ic-title, .kpi-value,
+.panel-title, .donut-center b, .pro-hero-title, .price-big { color: var(--heading); }
+.kpi-value.pos { color: var(--positive); } .kpi-value.neg { color: var(--negative); }
+
+.hero-title, .auth-title, .res-title, .input-title {
+    background: linear-gradient(95deg, #0b1220 0%, #312e81 45%, #4f46e5 75%, #0891b2 100%);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent; -webkit-text-fill-color: transparent;
+}
+
+/* ---------- glass cards with glowing edge ---------- */
+[class*="st-key-card_"] {
+    background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(244,247,255,0.92));
+    box-shadow: 0 12px 30px -18px rgba(79,70,229,0.45);
+}
+.preview, .st-key-inputcard {
+    background: linear-gradient(160deg, rgba(255,255,255,0.96), rgba(238,243,255,0.92));
+    box-shadow: 0 30px 70px -40px rgba(79,70,229,0.55), inset 0 1px 0 #ffffff;
+}
+div[data-testid="stForm"] {
+    background: rgba(255,255,255,0.86);
+    box-shadow: 0 30px 70px -40px rgba(79,70,229,0.5), inset 0 1px 0 #ffffff;
+    position: relative;
+}
+div[data-testid="stForm"]::before {
+    content: ""; position: absolute; top: -1px; left: 14%; right: 14%; height: 2px; border-radius: 2px;
+    background: linear-gradient(90deg, transparent, #06b6d4, #7c3aed, transparent); pointer-events: none;
+}
+.pc-icon { background: rgba(79,70,229,0.06); }
+.chip { background: rgba(255,255,255,0.75); }
+.res-head-url, .input-sub { background: rgba(255,255,255,0.75); }
+.ic-formats code { color: #3730a3; background: rgba(79,70,229,0.08); }
+.url-error { color: #9f1239; }
+div[data-testid="stDialog"] div[role="dialog"] { background: #ffffff !important; }
+.spectrum-bar::after { box-shadow: 0 0 0 1px var(--line-strong), 0 0 14px rgba(15,159,115,0.7); }
+
+/* ---------- buttons ---------- */
+.stButton > button, div[data-testid="stFormSubmitButton"] > button {
+    background: #ffffff; color: var(--text); border-color: var(--line-strong);
+}
+.stButton > button:hover, div[data-testid="stFormSubmitButton"] > button:hover {
+    color: var(--text); background: #ffffff; border-color: #06b6d4;
+    box-shadow: 0 0 0 3px rgba(6,182,212,0.15), 0 8px 20px -8px rgba(6,182,212,0.5);
+}
+.st-key-back_to_select .stButton > button:hover, .st-key-goto_signup .stButton > button:hover, .st-key-goto_login .stButton > button:hover {
+    color: var(--text); background: rgba(79,70,229,0.07); border-color: var(--line);
+}
+div[data-testid="stDownloadButton"] button { background: #ffffff; color: var(--text); }
+div[data-testid="stDownloadButton"] button:hover { color: var(--text); border-color: #06b6d4; }
+
+/* primary buttons keep the gradient and white text (re-declared so they win) */
+.stButton > button[kind="primary"], div[data-testid="stFormSubmitButton"] > button[kind="primaryFormSubmit"],
+.stButton > button[data-testid="stBaseButton-primary"], div[data-testid="stFormSubmitButton"] > button[data-testid="stBaseButton-primaryFormSubmit"] {
+    color: #ffffff; border: none; background: var(--brand-grad);
+    box-shadow: 0 10px 26px -10px rgba(79,70,229,0.75), 0 0 18px rgba(6,182,212,0.22);
+}
+.stButton > button[kind="primary"]:hover, div[data-testid="stFormSubmitButton"] > button[kind="primaryFormSubmit"]:hover,
+.stButton > button[data-testid="stBaseButton-primary"]:hover, div[data-testid="stFormSubmitButton"] > button[data-testid="stBaseButton-primaryFormSubmit"]:hover {
+    color: #ffffff; background: var(--brand-grad); filter: brightness(1.08);
+    box-shadow: 0 14px 32px -10px rgba(79,70,229,0.9), 0 0 26px rgba(6,182,212,0.4);
+}
+/* button labels inherit the button's colour instead of the generic text rule */
+.stApp .stButton button p, .stApp div[data-testid="stFormSubmitButton"] button p,
+.stApp div[data-testid="stDownloadButton"] button p { color: inherit !important; }
+.stApp .stButton button[kind="primary"] p, .stApp .stButton button[data-testid="stBaseButton-primary"] p,
+.stApp div[data-testid="stFormSubmitButton"] button p { color: #ffffff !important; }
+
+/* ---------- native Streamlit text ---------- */
+.stApp [data-testid="stMarkdownContainer"] p,
+.stApp [data-testid="stMarkdownContainer"] li,
+.stApp [data-testid="stMarkdownContainer"] h1,
+.stApp [data-testid="stMarkdownContainer"] h2,
+.stApp [data-testid="stMarkdownContainer"] h3,
+.stApp [data-testid="stMarkdownContainer"] h4 { color: var(--text) !important; }
+.stApp [data-testid="stMarkdownContainer"] a { color: #4f46e5 !important; }
+.stApp [data-testid="stWidgetLabel"] p, .stApp label p {
+    color: var(--text-dim) !important;
+    font-family: var(--mono) !important; font-size: 0.72rem !important;
+    letter-spacing: 0.08em; text-transform: uppercase;
+}
+.stApp [data-testid="stCaptionContainer"] * { color: var(--text-dim) !important; }
+.stApp [data-testid="stMetricLabel"] * { color: var(--text-dim) !important; }
+.stApp [data-testid="stMetricValue"] * {
+    color: var(--text) !important; font-family: var(--mono) !important; font-weight: 700 !important;
+}
+div[data-testid="stExpander"] summary p { color: var(--text) !important; }
+div[data-testid="stToggle"] p { color: var(--text-dim) !important; text-transform: none; letter-spacing: 0; font-family: var(--font) !important; font-size: 0.8rem !important; }
+
+/* ---------- inputs, selects, multiselect ---------- */
+.stApp div[data-baseweb="input"], .stApp div[data-baseweb="base-input"] {
+    background: #ffffff !important; border: 1px solid var(--line-strong) !important;
+}
+.stApp div[data-baseweb="input"]:focus-within {
+    border-color: #06b6d4 !important;
+    box-shadow: 0 0 0 3px rgba(6,182,212,0.20), 0 0 18px rgba(6,182,212,0.25) !important;
+}
+.stApp div[data-baseweb="input"] input::placeholder { color: var(--text-faint) !important; }
+.stApp div[data-baseweb="select"] > div {
+    background: #ffffff !important; color: var(--text) !important;
+    border: 1px solid var(--line-strong) !important; border-radius: var(--radius-md) !important;
+}
+.stApp div[data-baseweb="select"] svg { fill: var(--text-dim) !important; }
+.stApp [data-baseweb="tag"] { background: rgba(79,70,229,0.12) !important; }
+.stApp [data-baseweb="tag"] span { color: #3730a3 !important; }
+div[data-baseweb="popover"] ul, div[data-baseweb="popover"] > div, div[data-baseweb="menu"] {
+    background: #ffffff !important; color: var(--text) !important;
+    border: 1px solid var(--line) !important; border-radius: 12px !important;
+}
+div[data-baseweb="menu"] li, div[data-baseweb="popover"] li { color: var(--text) !important; }
+
+/* ---------- bordered containers, tabs, slider, tables ---------- */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background: var(--bg-glass); border-color: var(--line) !important; border-radius: 14px;
+}
+.stApp button[data-baseweb="tab"] p { color: var(--text-dim) !important; }
+.stApp button[data-baseweb="tab"][aria-selected="true"] p { color: #4f46e5 !important; }
+.stApp [data-baseweb="tab-highlight"] { background: linear-gradient(90deg, #06b6d4, #7c3aed) !important; }
+.stApp [data-testid="stSliderThumbValue"], .stApp [data-testid="stTickBarMin"],
+.stApp [data-testid="stTickBarMax"] { color: var(--text) !important; }
+.stApp [data-baseweb="slider"] [role="slider"] {
+    background: #4f46e5 !important; box-shadow: 0 0 0 4px rgba(79,70,229,0.2), 0 0 14px rgba(6,182,212,0.6);
+}
+.stApp [data-testid="stDataFrame"] { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.stApp hr { border-color: var(--line) !important; }
+</style>
+"""
+
+
 def inject_theme():
     st.markdown(THEME_CSS, unsafe_allow_html=True)
+    if st.session_state.get("theme", "dark") == "light":
+        st.markdown(LIGHT_CSS, unsafe_allow_html=True)
 
 
 def inject_card_accents(platforms: list):
@@ -552,7 +748,8 @@ def donut_svg(segments, size: int = 150, stroke: int = 14) -> str:
     circ = 2 * 3.14159265 * r
     cum = 0.0
     parts = [
-        f'<circle cx="{size/2}" cy="{size/2}" r="{r}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="{stroke}"/>'
+        f'<circle cx="{size/2}" cy="{size/2}" r="{r}" fill="none" '
+        f'style="stroke:var(--track)" stroke-width="{stroke}"/>'
     ]
     for pct, colour in segments:
         if pct <= 0:
