@@ -11,6 +11,7 @@ from theme import (
     md, icon, donut_svg, keyed_container, columns,
 )
 from theme_toggle import render_theme_toggle
+from marquee import render_platform_marquee
 from pages_instagram import render_instagram_input_page
 from pages_youtube import render_youtube_input_page
 from pages_linkedin import render_linkedin_input_page
@@ -169,6 +170,10 @@ md(
     </div>
     """
 )
+
+# Auto-scrolling platform strip (left -> right). Decorative; the cards below stay clickable.
+# Options: seconds=30 (bigger = slower), direction="left" to reverse.
+render_platform_marquee(PLATFORMS)
 
 cols = st.columns(5, gap="medium")
 for col, p in zip(cols, PLATFORMS):
