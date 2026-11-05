@@ -344,31 +344,19 @@ def render_results_page(platform_key: str, url: str, platform_info: dict):
     st.markdown(f"### Overall performance: **{results['verdict']}**")
     st.caption(f"Based on {results['total']} comments analyzed (any language).")
 
-        # ---------------- DOWNLOADS ----------------
-    d1, d2, _ = st.columns([1.5, 1.2, 4])
-    try:
-        pdf_bytes = build_pdf_report(
-            view,
-            platform_name=platform_name,
-            url=url,
-            emotions=dict(zip(emo["emotion"], emo["pct"])),
-            keywords=list(zip(kw["word"], kw["count"])),
-            used_demo=data["used_demo"],
-            total_all=len(df),
-        )
-    except Exception as e:
-        pdf_bytes = None
-        st.caption(f"PDF report unavailable: {e}")
+         # ---------------- DOWNLOAD REPORTS ----------------
+    col_csv, col_pdf = st.columns(2)
 
-    if pdf_bytes:
-        d1.download_button(
-            "⬇ Download PDF report", pdf_bytes,
-            file_name="sentio_report.pdf", mime="application/pdf",
-            type="primary", key="dl_pdf",
+    with col_csv:
+        st.download_button(
+            "⬇ Download results (CSV)",
+            view.to_csv(index=False).encode("utf-8"),
+            file_name="sentio_results.csv",
+            mime="text/csv",
+            use_container_width=True,
         )
-    d2.download_button(
-        "⬇ CSV data", view.to_csv(index=False).encode("utf-8"),
-        file_name="sentio_results.csv", mime="text/csv", key="dl_csv",
-    )
-    _back_button()
+
+    with col_pdf:
+        # PDF download button will go here
+
     _back_button()
