@@ -25,6 +25,7 @@ from comment_fetchers import (
     fetch_youtube_comments_rich,
     get_demo_comments_rich,
 )
+from report_pdf import build_pdf_report
 from emotion_engine import analyze_emotions
 from sentiment_engine import analyze_comments, results_to_dataframe
 from theme_toggle import plot_layout
