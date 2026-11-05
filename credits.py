@@ -167,6 +167,12 @@ BAR_CSS = """
     min-height: 2.2rem;
     white-space: nowrap;
 }
+.st-key-acct_bar .user-name { white-space: pre-wrap; }
+.st-key-acct_bar div[data-testid="stMarkdownContainer"] p { margin: 0 !important; }
+.st-key-acct_bar div[data-testid="stColumn"] {
+    display: flex;
+    align-items: center;
+}
 .st-key-acct_bar button {
     height: 2.2rem;
     min-height: 2.2rem;
@@ -342,7 +348,7 @@ def render_account_bar():
         left, mid, right = st.columns([7, 1.25, 1.25], vertical_alignment="center", gap="small")
         with left:
             st.markdown(
-                f'<div class="user-bar">signed in as <b>{user}</b>{chips}</div>',
+                f'<div class="user-bar"><span class="user-name">signed in as <b>{user}</b></span>{chips}</div>',
                 unsafe_allow_html=True,
             )
         with mid:
