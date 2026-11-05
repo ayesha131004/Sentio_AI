@@ -17,7 +17,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-from theme_toggle import plot_layout
 
 from comment_fetchers import (
     fetch_instagram_comments_rich,
@@ -28,8 +27,9 @@ from comment_fetchers import (
 )
 from emotion_engine import analyze_emotions
 from sentiment_engine import analyze_comments, results_to_dataframe
+from theme_toggle import plot_layout
 
-# Optional: per-comment emotion labels. Works without it (see notes).
+# Optional: per-comment emotion labels. Works without it.
 try:
     from emotion_engine import classify_emotions
 except ImportError:
@@ -43,13 +43,7 @@ EMOTION_COLORS = {
     "Anger": "#f59e0b", "Fear": "#a78bfa", "Surprise": "#38bdf8",
     "Disgust": "#84cc16", "Optimism": "#facc15", "Unknown": "#64748b",
 }
-PLOT_LAYOUT = dict(
-    template="plotly_dark",
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-    margin=dict(l=0, r=0, t=40, b=0),
-    font=dict(family="Inter, sans-serif"),
-)
+
 # ----------------------------------------------------------------------
 # STYLE
 # ----------------------------------------------------------------------
@@ -65,6 +59,17 @@ st.markdown(
 </style>""",
     unsafe_allow_html=True,
 )
+
+
+def _style(fig, **layout):
+    """Applies the current light/dark theme to a Plotly figure."""
+    t = plot_layout()
+    grid_x = t.pop("xaxis", {})
+    grid_y = t.pop("yaxis", {})
+    fig.update_layout(margin=dict(l=0, r=0, t=40, b=0), **t, **layout)
+    fig.update_xaxes(**grid_x)
+    fig.update_yaxes(**grid_y)
+    return fig
 
 
 # ----------------------------------------------------------------------
@@ -113,7 +118,7 @@ def _load(platform_key: str, url: str) -> dict:
             except Exception:
                 pass
 
-        # Overall emotion percentages (works with the current emotion_engine)
+        # Overall emotion percentages
         try:
             overall_emotions = analyze_emotions(texts) or {}
         except Exception:
@@ -178,10 +183,17 @@ def _feed_html(rows: pd.DataFrame) -> str:
     return "".join(parts)
 
 
+def _back_button():
+    if st.button("← analyze another link", key="results_back"):
+        st.session_state.page = "select"
+        st.session_state.platform = None
+        st.rerun()
+
+
 # ----------------------------------------------------------------------
 # PAGE
 # ----------------------------------------------------------------------
-def render_results_page(PLOT_LAYOUT.update(plot_layout())):
+def render_results_page(platform_key: str, url: str, platform_info: dict):
     accent = platform_info["accent"] if platform_info else "#3ecf8e"
     platform_name = platform_info["name"] if platform_info else "Platform"
 
@@ -250,7 +262,7 @@ def render_results_page(PLOT_LAYOUT.update(plot_layout())):
                 hovertemplate="%{label}: %{value} comments (%{percent})<extra></extra>",
             ))
             donut.add_annotation(text=SENT_FACES[dominant], showarrow=False, font=dict(size=40))
-            donut.update_layout(title="📊 Sentiment", height=320, **PLOT_LAYOUT)
+            _style(donut, title="📊 Sentiment", height=320)
             st.plotly_chart(donut, width="stretch")
 
     with c_right:
@@ -271,9 +283,8 @@ def render_results_page(PLOT_LAYOUT.update(plot_layout())):
                           color="emotion", color_discrete_map=EMOTION_COLORS,
                           title=f"❤️ Emotions{note}")
             bars.update_traces(texttemplate="%{text}%", textposition="outside", cliponaxis=False)
-            bars.update_layout(showlegend=False, xaxis_title=None, yaxis_title=None,
-                               xaxis=dict(range=[0, 110], showgrid=False, visible=False),
-                               height=320, **PLOT_LAYOUT)
+            _style(bars, showlegend=False, xaxis_title=None, yaxis_title=None, height=320)
+            bars.update_xaxes(range=[0, 110], showgrid=False, visible=False)
             st.plotly_chart(bars, width="stretch")
 
     # ---------------- TIMELINE + KEYWORDS ----------------
@@ -289,8 +300,7 @@ def render_results_page(PLOT_LAYOUT.update(plot_layout())):
                 tl = tl.groupby(["bucket", "sentiment"]).size().reset_index(name="comments")
                 fig = px.bar(tl, x="bucket", y="comments", color="sentiment",
                              color_discrete_map=SENT_COLORS, title="📈 Sentiment over time")
-                fig.update_layout(xaxis_title=None, yaxis_title=None, legend_title=None,
-                                  height=320, **PLOT_LAYOUT)
+                _style(fig, xaxis_title=None, yaxis_title=None, legend_title=None, height=320)
                 st.plotly_chart(fig, width="stretch")
             else:
                 st.caption("Not enough dated comments for a timeline.")
@@ -302,7 +312,7 @@ def render_results_page(PLOT_LAYOUT.update(plot_layout())):
                 fig = px.bar(kw.sort_values("count"), x="count", y="word", orientation="h",
                              title="🔑 Top keywords")
                 fig.update_traces(marker_color=accent)
-                fig.update_layout(xaxis_title=None, yaxis_title=None, height=320, **PLOT_LAYOUT)
+                _style(fig, xaxis_title=None, yaxis_title=None, height=320)
                 st.plotly_chart(fig, width="stretch")
             else:
                 st.caption("Not enough text for keywords.")
@@ -341,10 +351,3 @@ def render_results_page(PLOT_LAYOUT.update(plot_layout())):
         mime="text/csv",
     )
     _back_button()
-
-
-def _back_button():
-    if st.button("← analyze another link", key="results_back"):
-        st.session_state.page = "select"
-        st.session_state.platform = None
-        st.rerun()
