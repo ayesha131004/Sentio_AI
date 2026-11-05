@@ -248,10 +248,56 @@ FEATURES = [
 ]
 
 
+# Roomier layout for the login / sign-up screen. Everything is scoped with
+# :has(.auth-side) so no other page is affected, and it only uses theme variables,
+# so dark and light mode both keep working.
+_AUTH_CSS = """
+<style>
+.block-container:has(.auth-side) { max-width: 1360px; padding-top: 1.6rem; padding-bottom: 4rem; }
+
+/* two columns: more air between them, and tall enough to fill the screen */
+.block-container:has(.auth-side) div[data-testid="stHorizontalBlock"] {
+    gap: 5.5rem; align-items: center; min-height: calc(100vh - 17rem);
+}
+@media (max-width: 960px) {
+    .block-container:has(.auth-side) div[data-testid="stHorizontalBlock"] { gap: 2.5rem; min-height: 0; }
+}
+
+/* left: headline + feature list */
+.auth-side { padding: 1rem 0; }
+.auth-title { font-size: clamp(2.6rem, 5vw, 4.3rem); line-height: 1.05; margin: 0 0 1.6rem; }
+.auth-sub { font-size: 1.2rem; line-height: 1.75; max-width: 34rem; margin-bottom: 3rem; }
+.feat { gap: 1.4rem; padding: 1.5rem 0; max-width: 34rem; }
+.feat-ico { width: 3rem; height: 3rem; border-radius: 14px; }
+.feat-title { font-size: 1.08rem; }
+.feat-desc { font-size: .93rem; margin-top: .3rem; line-height: 1.6; }
+
+/* right: heading, card, switch link */
+.auth-form-head { margin-bottom: 1.8rem; }
+.auth-form-title { font-size: 2.1rem; line-height: 1.15; }
+.auth-form-sub { font-size: 1.02rem; margin-top: .6rem; line-height: 1.6; }
+.block-container:has(.auth-side) div[data-testid="stForm"] { padding: 2.4rem 2.4rem 2.2rem; }
+.block-container:has(.auth-side) div[data-testid="stForm"] div[data-testid="stVerticalBlock"] { gap: 1.4rem; }
+.block-container:has(.auth-side) div[data-testid="stTextInput"] label p { font-size: .92rem; margin-bottom: .2rem; }
+.block-container:has(.auth-side) div[data-baseweb="input"] input { height: 3.5rem; font-size: 1rem !important; padding: 0 1.2rem !important; }
+.block-container:has(.auth-side) div[data-testid="stFormSubmitButton"] > button {
+    width: 100%; min-height: 3.5rem; font-size: 1.05rem; margin-top: .6rem;
+}
+.auth-switch { font-size: 1rem; margin: 2.2rem 0 .6rem; }
+.block-container:has(.auth-side) .stButton > button { min-height: 3rem; font-size: 1rem; padding: 0 1.4rem; }
+@media (max-width: 640px) {
+    .block-container:has(.auth-side) div[data-testid="stForm"] { padding: 1.6rem 1.3rem 1.5rem; }
+    .auth-title { font-size: 2.4rem; }
+}
+</style>
+"""
+
+
 def render_auth_page():
     mode = st.session_state.get("auth_mode", "login")
 
-    md(f'<div style="padding-bottom:0.9rem;border-bottom:1px solid var(--line);">{brand_lockup(42)}</div>')
+    st.markdown(_AUTH_CSS, unsafe_allow_html=True)
+    md(f'<div style="padding-bottom:1.4rem;margin-bottom:2.4rem;border-bottom:1px solid var(--line);">{brand_lockup(56)}</div>')
 
     side, form_col = columns([1.1, 1], gap="large")
 
